@@ -371,6 +371,9 @@ int hooks_ctor(struct paths* paths_)
 
 int hooks_dtor()
 {
+  stbds_shfree(dword_map);
+  stbds_shfree(string_map);
+  stbds_hmfree(section_map);
   stbds_shfree(reg_map);
   stbds_shfree(paths_map);
 
