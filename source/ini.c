@@ -1,6 +1,7 @@
 #include "ini.h"
 
 #include <Windows.h>
+#include <ctype.h>
 #include <stdio.h>
 
 static char mayor_name[33] = {0};
@@ -31,10 +32,19 @@ char const* get_ini_string(char const* ini_path,
       __assume(0);
   }
 
+  char uppercase_key[33] = {0};
+  {
+    size_t length = strlen(key);
+    for (size_t i = 0; i != length; ++i) {
+      uppercase_key[i] = toupper(key[i]);
+    }
+  }
+
   if (*out == '\0') {
-    (void)GetPrivateProfileStringA(section, key, default_, out, size, ini_path);
+    (void)GetPrivateProfileStringA(
+        section, uppercase_key, default_, out, size, ini_path);
     if (GetLastError() != ERROR_SUCCESS) {
-      (void)WritePrivateProfileStringA(section, key, out, ini_path);
+      (void)WritePrivateProfileStringA(section, uppercase_key, out, ini_path);
     }
   }
 

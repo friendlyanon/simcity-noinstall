@@ -50,6 +50,7 @@ static LSTATUS(APIENTRY* RegCreateKeyExA_ptr)(  //
 #define OPTIONS_KEY ((HKEY)(ULONG_PTR)(0x80000045L))
 #define LOCALIZE_KEY ((HKEY)(ULONG_PTR)(0x80000046L))
 #define REGISTRATION_KEY ((HKEY)(ULONG_PTR)(0x80000047L))
+#define SCURK_KEY ((HKEY)(ULONG_PTR)(0x80000048L))
 
 struct reg_entry
 {
@@ -93,7 +94,7 @@ static LSTATUS(APIENTRY* RegCloseKey_ptr)(HKEY) = NULL;
 static LSTATUS APIENTRY RegCloseKey_fn(HKEY hKey)
 {
   ULONG_PTR value = (ULONG_PTR)hKey;
-  if ((ULONG_PTR)MAXIS_KEY <= value && value <= (ULONG_PTR)REGISTRATION_KEY) {
+  if ((ULONG_PTR)MAXIS_KEY <= value && value <= (ULONG_PTR)SCURK_KEY) {
     return ERROR_SUCCESS;
   }
 
@@ -148,7 +149,7 @@ static LSTATUS APIENTRY RegSetValueExA_fn(  //
     CONST BYTE* lpData,
     DWORD cbData)
 {
-  if (dwType == REG_DWORD) {
+  if (dwType == REG_DWORD || dwType == REG_BINARY && cbData == sizeof(DWORD)) {
     int i = stbds_hmgeti(section_map, hKey);
     if (i != -1) {
       set_ini_dword(
@@ -276,13 +277,16 @@ int hooks_ctor(struct paths* paths_)
   stbds_sh_new_arena(paths_map);
   stbds_shput(paths_map, "DATA", offsetof(struct paths, data));
   stbds_shput(paths_map, "GRAPHICS", offsetof(struct paths, graphics));
+  stbds_shput(paths_map, "Music", offsetof(struct paths, sounds));
   stbds_shput(paths_map, "MUSIC", offsetof(struct paths, sounds));
   stbds_shput(paths_map, "SOUND", offsetof(struct paths, sounds));
   stbds_shput(paths_map, "SCENARIOS", offsetof(struct paths, scenarios));
   stbds_shput(paths_map, "HOME", offsetof(struct paths, home));
   stbds_shput(paths_map, "CITIES", offsetof(struct paths, cities));
+  stbds_shput(paths_map, "Cities", offsetof(struct paths, cities));
   stbds_shput(paths_map, "SAVEGAME", offsetof(struct paths, cities));
   stbds_shput(paths_map, "TILESETS", offsetof(struct paths, tilesets));
+  stbds_shput(paths_map, "TileSets", offsetof(struct paths, tilesets));
   stbds_shput(paths_map, "HOME", offsetof(struct paths, home));
   stbds_shput(paths_map, "GOODIES", offsetof(struct paths, goodies));
 
@@ -290,21 +294,29 @@ int hooks_ctor(struct paths* paths_)
   stbds_shput(reg_map, "Maxis", MAXIS_KEY);
   stbds_shput(reg_map, "SimCity 2000", SC2K_KEY);
   stbds_shput(reg_map, "PATHS", PATHS_KEY);
+  stbds_shput(reg_map, "Paths", PATHS_KEY);
   stbds_shput(reg_map, "Windows", WINDOWS_KEY);
   stbds_shput(reg_map, "VERSION", VERSION_KEY);
+  stbds_shput(reg_map, "Version", VERSION_KEY);
   stbds_shput(reg_map, "OPTIONS", OPTIONS_KEY);
   stbds_shput(reg_map, "LOCALIZE", LOCALIZE_KEY);
+  stbds_shput(reg_map, "Localize", LOCALIZE_KEY);
   stbds_shput(reg_map, "REGISTRATION", REGISTRATION_KEY);
+  stbds_shput(reg_map, "SCURK", SCURK_KEY);
 
   section_put(WINDOWS_KEY, "Windows");
   section_put(VERSION_KEY, "VERSION");
   section_put(OPTIONS_KEY, "OPTIONS");
   section_put(LOCALIZE_KEY, "LOCALIZE");
   section_put(REGISTRATION_KEY, "REGISTRATION");
+  section_put(SCURK_KEY, "SCURK");
 
   stbds_sh_new_arena(string_map);
+  stbds_shput(string_map, "Mayor Name", "MissingMayor");
   stbds_shput(string_map, "MAYOR NAME", "MissingMayor");
+  stbds_shput(string_map, "Company Name", "MissingCompany");
   stbds_shput(string_map, "COMPANY NAME", "MissingCompany");
+  stbds_shput(string_map, "Language", "USA");
   stbds_shput(string_map, "LANGUAGE", "USA");
 
   stbds_sh_new_arena(dword_map);
