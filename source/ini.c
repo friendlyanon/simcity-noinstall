@@ -39,7 +39,7 @@ char const* get_ini_string(char const* ini_path,
   char uppercase_key[33] = {0};
   size_t length = strlen(key);
   for (size_t i = 0; i != length; ++i) {
-    uppercase_key[i] = toupper(key[i]);
+    uppercase_key[i] = (char)toupper(key[i]);
   }
 
   (void)GetPrivateProfileStringA(
