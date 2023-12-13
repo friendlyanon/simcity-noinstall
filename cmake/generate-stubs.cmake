@@ -4,17 +4,29 @@ file(READ "${input}" functions)
 string(STRIP "${functions}" functions)
 string(REPLACE "\n" \; functions "${functions}")
 
+set(externs "")
 set(variables "")
 set(thunks "")
 set(calls "")
 set(def "EXPORTS\n")
 
 foreach(fn IN LISTS functions)
+  string(APPEND externs "EXTERN ${fn}_ptr:DWORD\n")
   string(APPEND variables "FARPROC ${fn}_ptr = NULL;\n")
-  string(APPEND thunks "__declspec(naked) void _${fn}(void) { _asm { jmp[${fn}_ptr] } }\n")
+  string(APPEND thunks "\n_${fn} PROC\n  jmp dword ptr [${fn}_ptr]\n_${fn} ENDP\n")
   string(APPEND calls "\n      || get_fn(&${fn}_ptr, \"${fn}\")")
   string(APPEND def "  ${fn} = _${fn}\n")
 endforeach()
+
+file(WRITE "${output}/stubs-generated.asm" "\
+.386
+.MODEL FLAT, C
+
+${externs}
+.CODE
+${thunks}
+END
+")
 
 file(WRITE "${output}/stubs-generated.c" "\
 #include <Windows.h>
@@ -23,7 +35,6 @@ file(WRITE "${output}/stubs-generated.c" "\
 #include \"stubs.h\"
 
 ${variables}
-${thunks}
 static int get_fn(FARPROC* out, LPCSTR name)
 {
   *out = GetProcAddress((HMODULE)winmm_handle, name);

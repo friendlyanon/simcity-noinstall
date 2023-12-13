@@ -4,14 +4,14 @@ if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "In-source builds are not supported")
 endif()
 
-project(simcity-noinstall C)
+project(simcity-noinstall C ASM_MASM)
 
 if(NOT CMAKE_SIZEOF_VOID_P EQUAL "4")
   message(FATAL_ERROR "32-bit target required")
 endif()
 
 add_custom_command(
-    OUTPUT stubs-generated.c stubs-generated.def
+    OUTPUT stubs-generated.c stubs-generated.asm stubs-generated.def
     COMMAND "${CMAKE_COMMAND}"
     "-Doutput=${PROJECT_BINARY_DIR}"
     "-Dinput=${PROJECT_SOURCE_DIR}/source/winmm.txt"
@@ -34,6 +34,7 @@ add_library(
     source/stubs.c
     source/stubs.h
     "${PROJECT_BINARY_DIR}/stubs-generated.c"
+    "${PROJECT_BINARY_DIR}/stubs-generated.asm"
     "${PROJECT_BINARY_DIR}/stubs-generated.def"
 )
 
