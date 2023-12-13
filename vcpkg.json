@@ -1,0 +1,8 @@
+{
+  "name": "simcity-plus",
+  "version-semver": "0.1.0",
+  "dependencies": [
+    "minhook",
+    "stb"
+  ]
+}
