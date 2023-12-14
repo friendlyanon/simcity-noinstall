@@ -198,12 +198,16 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
   }
 
   if (hKey == VERSION_KEY && strcmp("SimCity 2000", lpValueName) == 0) {
-    out_dword(256, lpData, lpcbData);
+    out_dword(get_ini_dword(paths->ini, "VERSION", lpValueName, 256),
+              lpData,
+              lpcbData);
     return ERROR_SUCCESS;
   }
 
   if (hKey == WINDOWS_KEY && strcmp("SimCity 2000", lpValueName) == 0) {
-    out_string("8 1", lpData, lpcbData);
+    out_string(get_ini_string(paths->ini, "Windows", lpValueName, "8 1"),
+               lpData,
+               lpcbData);
     return ERROR_SUCCESS;
   }
 
