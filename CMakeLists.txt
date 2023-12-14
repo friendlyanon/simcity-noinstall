@@ -54,7 +54,7 @@ target_compile_features(simcity-noinstall PRIVATE c_std_99)
 target_include_directories(simcity-noinstall PRIVATE source)
 
 find_package(minhook REQUIRED)
-target_link_libraries(simcity-noinstall PRIVATE minhook::minhook winmm)
+target_link_libraries(simcity-noinstall PRIVATE minhook::minhook shlwapi)
 
 find_path(STB_DS_INCLUDE_DIR stb_ds.h REQUIRED)
 target_include_directories(simcity-noinstall SYSTEM PRIVATE "${STB_DS_INCLUDE_DIR}")

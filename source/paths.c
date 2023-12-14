@@ -49,10 +49,10 @@ static void root_paths(char* dll_path, char* slash)
   (void)memcpy(paths.home,
                dll_path,
                size == sizeof("X:") - 1 ? sizeof("X:\\") - 1 : size);
-  (void)memcpy(paths.goodies, dll_path, size + 1);
+  (void)memcpy(paths.movies, dll_path, size + 1);
 
   size_t count = PATHS_LENGTH - size;
-  (void)strncat(paths.goodies + size, "GOODIES", count);
+  (void)strncat(paths.movies + size, "DATA\\", count);
 }
 
 struct paths* paths_ctor(char* dll_path)

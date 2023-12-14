@@ -15,7 +15,7 @@ struct paths
   char tilesets[PATHS_LENGTH];
 
   char home[PATHS_LENGTH];
-  char goodies[PATHS_LENGTH];
+  char movies[PATHS_LENGTH];
 };
 
 struct paths* paths_ctor(char const* dll_path);

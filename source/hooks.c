@@ -9,6 +9,88 @@
 #include "ini.h"
 #include "stb_ds.h"
 
+static char fake_path[] = "A:\\DATA\\";
+
+static BOOL(WINAPI* GetVolumeInformationA_ptr)(
+    LPCSTR, LPSTR, DWORD, LPDWORD, LPDWORD, LPDWORD, LPSTR, DWORD) = NULL;
+
+static BOOL WINAPI GetVolumeInformationA_fn(  //
+    LPCSTR lpRootPathName,
+    LPSTR lpVolumeNameBuffer,
+    DWORD nVolumeNameSize,
+    LPDWORD lpVolumeSerialNumber,
+    LPDWORD lpMaximumComponentLength,
+    LPDWORD lpFileSystemFlags,
+    LPSTR lpFileSystemNameBuffer,
+    DWORD nFileSystemNameSize)
+{
+  size_t length = strlen(lpRootPathName);
+  if (length == 3 && memcmp(fake_path, lpRootPathName, 3) == 0) {
+    return TRUE;
+  }
+
+  return GetVolumeInformationA_ptr(  //
+      lpRootPathName,
+      lpVolumeNameBuffer,
+      nVolumeNameSize,
+      lpVolumeSerialNumber,
+      lpMaximumComponentLength,
+      lpFileSystemFlags,
+      lpFileSystemNameBuffer,
+      nFileSystemNameSize);
+}
+
+static struct paths* paths = NULL;
+
+static char const* rewrite_path(char* buffer, char const* path)
+{
+  size_t length = strlen(path);
+  size_t fake_length = _countof(fake_path) - 1;
+  if (length < fake_length || memcmp(fake_path, path, fake_length) != 0) {
+    return path;
+  }
+
+  size_t movies_length = strlen(paths->movies);
+  (void)memcpy(buffer, paths->movies, movies_length);
+  (void)memcpy(buffer + movies_length,
+               path + fake_length,
+               min(MAX_PATH - movies_length, length - fake_length));
+  return buffer;
+}
+
+static HANDLE(WINAPI* FindFirstFileA_ptr)(LPCSTR, LPWIN32_FIND_DATAA) = NULL;
+
+static HANDLE WINAPI FindFirstFileA_fn(  //
+    LPCSTR lpFileName,
+    LPWIN32_FIND_DATAA lpFindFileData)
+{
+  char buffer[MAX_PATH] = {0};
+  return FindFirstFileA_ptr(rewrite_path(buffer, lpFileName), lpFindFileData);
+}
+
+static HANDLE(WINAPI* CreateFileA_ptr)(
+    LPCSTR, DWORD, DWORD, LPSECURITY_ATTRIBUTES, DWORD, DWORD, HANDLE) = NULL;
+
+static HANDLE WINAPI CreateFileA_fn(  //
+    LPCSTR lpFileName,
+    DWORD dwDesiredAccess,
+    DWORD dwShareMode,
+    LPSECURITY_ATTRIBUTES lpSecurityAttributes,
+    DWORD dwCreationDisposition,
+    DWORD dwFlagsAndAttributes,
+    HANDLE hTemplateFile)
+{
+  char buffer[MAX_PATH] = {0};
+  return CreateFileA_ptr(  //
+      rewrite_path(buffer, lpFileName),
+      dwDesiredAccess,
+      dwShareMode,
+      lpSecurityAttributes,
+      dwCreationDisposition,
+      dwFlagsAndAttributes,
+      hTemplateFile);
+}
+
 typedef BOOL(APIENTRY* dialog_fn)(LPOPENFILENAMEA);
 
 static BOOL dialog_fix(LPOPENFILENAMEA options, dialog_fn original)
@@ -104,8 +186,6 @@ static LSTATUS APIENTRY RegCloseKey_fn(HKEY hKey)
 static LSTATUS(APIENTRY* RegQueryValueExA_ptr)(
     HKEY, LPCSTR, LPDWORD, LPDWORD, LPBYTE, LPDWORD) = NULL;
 
-static struct paths* paths = NULL;
-
 struct paths_entry
 {
   char const* key;
@@ -192,8 +272,13 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
     LPDWORD lpcbData)
 {
   if (hKey == PATHS_KEY) {
-    size_t offset = stbds_shget(paths_map, lpValueName);
-    out_string((char const*)paths + offset, lpData, lpcbData);
+    if (strcmp("GOODIES", lpValueName) == 0) {
+      char drive[] = {fake_path[0], ':', '\\', '\0'};
+      out_string(drive, lpData, lpcbData);
+    } else {
+      size_t offset = stbds_shget(paths_map, lpValueName);
+      out_string((char const*)paths + offset, lpData, lpcbData);
+    }
     return ERROR_SUCCESS;
   }
 
@@ -275,9 +360,11 @@ static void section_put(HKEY key, char const* value)
   stbds_hmput(section_map, key, value);
 }
 
-int hooks_ctor(struct paths* paths_)
+int hooks_ctor(struct paths* paths_, char drive_)
 {
   paths = paths_;
+  fake_path[0] = drive_;
+
   stbds_sh_new_arena(paths_map);
   stbds_shput(paths_map, "DATA", offsetof(struct paths, data));
   stbds_shput(paths_map, "GRAPHICS", offsetof(struct paths, graphics));
@@ -292,7 +379,6 @@ int hooks_ctor(struct paths* paths_)
   stbds_shput(paths_map, "TILESETS", offsetof(struct paths, tilesets));
   stbds_shput(paths_map, "TileSets", offsetof(struct paths, tilesets));
   stbds_shput(paths_map, "HOME", offsetof(struct paths, home));
-  stbds_shput(paths_map, "GOODIES", offsetof(struct paths, goodies));
 
   stbds_sh_new_arena(reg_map);
   stbds_shput(reg_map, "Maxis", MAXIS_KEY);
@@ -370,7 +456,19 @@ int hooks_ctor(struct paths* paths_)
       || hook(L"comdlg32.dll",
               "GetSaveFileNameA",
               (LPVOID)GetSaveFileNameA_fn,
-              (LPVOID*)&GetSaveFileNameA_ptr);
+              (LPVOID*)&GetSaveFileNameA_ptr)
+      || hook(L"kernel32.dll",
+              "GetVolumeInformationA",
+              (LPVOID)GetVolumeInformationA_fn,
+              (LPVOID*)&GetVolumeInformationA_ptr)
+      || hook(L"kernel32.dll",
+              "FindFirstFileA",
+              (LPVOID)FindFirstFileA_fn,
+              (LPVOID*)&FindFirstFileA_ptr)
+      || hook(L"kernel32.dll",
+              "CreateFileA",
+              (LPVOID)CreateFileA_fn,
+              (LPVOID*)&CreateFileA_ptr);
 }
 
 int hooks_dtor()
