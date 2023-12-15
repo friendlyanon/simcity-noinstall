@@ -336,24 +336,10 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
       hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
-static int hook(LPCWSTR pszModule,
-                LPCSTR pszProcName,
-                LPVOID pDetour,
-                LPVOID* ppOriginal)
-{
-  LPVOID target = NULL;
-  if (MH_CreateHookApiEx(pszModule, pszProcName, pDetour, ppOriginal, &target)
-      != MH_OK)
-  {
-    return 1;
-  }
-
-  if (MH_EnableHook(target) != MH_OK) {
-    return 1;
-  }
-
-  return 0;
-}
+int __stdcall hook(LPCWSTR pszModule,
+                   LPCSTR pszProcName,
+                   FARPROC pDetour,
+                   FARPROC* ppOriginal);
 
 static void section_put(HKEY key, char const* value)
 {
@@ -435,40 +421,40 @@ int hooks_ctor(struct paths* paths_, char drive_)
 
   return hook(L"advapi32.dll",
               "RegQueryValueExA",
-              (LPVOID)RegQueryValueExA_fn,
-              (LPVOID*)&RegQueryValueExA_ptr)
+              (FARPROC)RegQueryValueExA_fn,
+              (FARPROC*)&RegQueryValueExA_ptr)
       || hook(L"advapi32.dll",
               "RegSetValueExA",
-              (LPVOID)RegSetValueExA_fn,
-              (LPVOID*)&RegSetValueExA_ptr)
+              (FARPROC)RegSetValueExA_fn,
+              (FARPROC*)&RegSetValueExA_ptr)
       || hook(L"advapi32.dll",
               "RegCreateKeyExA",
-              (LPVOID)RegCreateKeyExA_fn,
-              (LPVOID*)&RegCreateKeyExA_ptr)
+              (FARPROC)RegCreateKeyExA_fn,
+              (FARPROC*)&RegCreateKeyExA_ptr)
       || hook(L"advapi32.dll",
               "RegCloseKey",
-              (LPVOID)RegCloseKey_fn,
-              (LPVOID*)&RegCloseKey_ptr)
+              (FARPROC)RegCloseKey_fn,
+              (FARPROC*)&RegCloseKey_ptr)
       || hook(L"comdlg32.dll",
               "GetOpenFileNameA",
-              (LPVOID)GetOpenFileNameA_fn,
-              (LPVOID*)&GetOpenFileNameA_ptr)
+              (FARPROC)GetOpenFileNameA_fn,
+              (FARPROC*)&GetOpenFileNameA_ptr)
       || hook(L"comdlg32.dll",
               "GetSaveFileNameA",
-              (LPVOID)GetSaveFileNameA_fn,
-              (LPVOID*)&GetSaveFileNameA_ptr)
+              (FARPROC)GetSaveFileNameA_fn,
+              (FARPROC*)&GetSaveFileNameA_ptr)
       || hook(L"kernel32.dll",
               "GetVolumeInformationA",
-              (LPVOID)GetVolumeInformationA_fn,
-              (LPVOID*)&GetVolumeInformationA_ptr)
+              (FARPROC)GetVolumeInformationA_fn,
+              (FARPROC*)&GetVolumeInformationA_ptr)
       || hook(L"kernel32.dll",
               "FindFirstFileA",
-              (LPVOID)FindFirstFileA_fn,
-              (LPVOID*)&FindFirstFileA_ptr)
+              (FARPROC)FindFirstFileA_fn,
+              (FARPROC*)&FindFirstFileA_ptr)
       || hook(L"kernel32.dll",
               "CreateFileA",
-              (LPVOID)CreateFileA_fn,
-              (LPVOID*)&CreateFileA_ptr);
+              (FARPROC)CreateFileA_fn,
+              (FARPROC*)&CreateFileA_ptr);
 }
 
 int hooks_dtor()

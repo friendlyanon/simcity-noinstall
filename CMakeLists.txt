@@ -24,6 +24,7 @@ add_custom_command(
 
 add_library(
     simcity-noinstall MODULE
+    source/hooks.asm
     source/hooks.c
     source/hooks.h
     source/ini.c
