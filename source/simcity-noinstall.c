@@ -22,10 +22,12 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
   if (fdwReason == DLL_PROCESS_ATTACH) {
     char buffer[MAX_PATH] = {0};
-    UINT result =
-        GetModuleFileNameA((HMODULE)hinstDLL, buffer, _countof(buffer));
-    if (result == 0) {
-      return FALSE;
+    {
+      UINT result =
+          GetModuleFileNameA((HMODULE)hinstDLL, buffer, _countof(buffer));
+      if (result == 0 || result >= _countof(buffer)) {
+        return FALSE;
+      }
     }
 
     int current_drive = PathGetDriveNumberA(buffer);
@@ -38,8 +40,11 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
       return FALSE;
     }
 
-    if (GetWindowsDirectoryA(buffer, _countof(buffer)) == 0) {
-      return FALSE;
+    {
+      UINT result = GetWindowsDirectoryA(buffer, _countof(buffer));
+      if (result == 0 || result >= _countof(buffer)) {
+        return FALSE;
+      }
     }
 
     int system_drive = PathGetDriveNumberA(buffer);

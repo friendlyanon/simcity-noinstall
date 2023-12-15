@@ -67,6 +67,10 @@ struct paths* paths_ctor(char* dll_path)
     return NULL;
   }
 
+  if ((size_t)(last_slash - dll_path) - 1 >= PATHS_LENGTH) {
+    return NULL;
+  }
+
   sc2k_paths(dll_path, last_slash);
   root_paths(dll_path, second_last_slash);
 

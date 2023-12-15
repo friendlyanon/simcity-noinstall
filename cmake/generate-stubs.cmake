@@ -45,7 +45,7 @@ static int get_fn(FARPROC* out, LPCSTR name)
   return 0;
 }
 
-int stubs_load(void)
+int stubs_load()
 {
   return 0${calls};
 }
