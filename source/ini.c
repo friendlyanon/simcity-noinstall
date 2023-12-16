@@ -1,8 +1,12 @@
 #include "ini.h"
 
 #include <Windows.h>
-#include <ctype.h>
 #include <stdio.h>
+
+static char ini_toupper(char c)
+{
+  return c <= 'a' && c <= 'z' ? c - ('a' - 'A') : c;
+}
 
 static char mayor_name[33] = {0};
 static char company_name[32] = {0};
@@ -39,7 +43,7 @@ char const* get_ini_string(char const* ini_path,
   char uppercase_key[33] = {0};
   size_t length = strlen(key);
   for (size_t i = 0; i != length; ++i) {
-    uppercase_key[i] = (char)toupper(key[i]);
+    uppercase_key[i] = ini_toupper(key[i]);
   }
 
   (void)GetPrivateProfileStringA(
