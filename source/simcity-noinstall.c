@@ -9,13 +9,13 @@
 
 static char select_drive(char current_drive, char system_drive)
 {
-  for (size_t i = 0; i != 26; ++i) {
-    char drive = (char)('A' + i);
+  char drive = 'A';
+  for (;; ++drive) {
     if (drive != current_drive && drive != system_drive) {
-      return drive;
+      break;
     }
   }
-  __assume(0);
+  return drive;
 }
 
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
