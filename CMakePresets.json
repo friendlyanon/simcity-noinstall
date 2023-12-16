@@ -41,20 +41,13 @@
       }
     },
     {
-      "name": "ci-win32",
-      "inherits": ["flags-msvc", "ci-std"],
-      "generator": "Visual Studio 17 2022",
-      "architecture": "x86",
-      "hidden": true
-    },
-    {
-      "name": "ci-build",
-      "binaryDir": "${sourceDir}/build",
-      "hidden": true
-    },
-    {
       "name": "ci-windows",
-      "inherits": ["ci-build", "ci-win32", "vcpkg", "vcpkg-win32-static"]
+      "binaryDir": "${sourceDir}/build",
+      "generator": "Ninja",
+      "inherits": ["flags-msvc", "ci-std", "vcpkg", "vcpkg-win32-static"],
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
     }
   ]
 }
