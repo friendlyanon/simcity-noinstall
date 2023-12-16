@@ -63,3 +63,9 @@ set_property(SOURCE source/hooks.c PROPERTY COMPILE_DEFINITIONS STB_DS_IMPLEMENT
 target_compile_definitions(simcity-noinstall PRIVATE STBDS_NO_SHORT_NAMES=1)
 
 install(TARGETS simcity-noinstall DESTINATION .)
+install(CODE [[
+get_filename_component(install_prefix "${CMAKE_INSTALL_PREFIX}" ABSOLUTE)
+message(STATUS "Renaming: ${install_prefix}/WINMM.DLL")
+file(REMOVE "${install_prefix}/WINMM.DLL")
+file(RENAME "${install_prefix}/$<TARGET_FILE_NAME:simcity-noinstall>" "${install_prefix}/WINMM.DLL")
+]])

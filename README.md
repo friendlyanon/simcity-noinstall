@@ -5,8 +5,8 @@ keep the files in their original state.
 
 # How to use
 
-The project produces `simcity-noinstall.dll`. This will have to be renamed to
-`WINMM.DLL` and placed in the game's `SC2K` folder.
+The project produces `WINMM.DLL`. This will have to be  placed in the game's
+`SC2K` folder.
 
 Upon launching the game, `simcity-noinstall.ini` will be created, where you can
 edit your mayor and company names.
