@@ -4,7 +4,7 @@
 
 static struct paths paths = {0};
 
-static char* find_reverse(char* begin, char* end, char value)
+static char const* find_reverse(char const* begin, char const* end, char value)
 {
   if (begin == end) {
     return NULL;
@@ -20,7 +20,7 @@ static char* find_reverse(char* begin, char* end, char value)
   return NULL;
 }
 
-static void sc2k_paths(char* dll_path, char* slash)
+static void sc2k_paths(char const* dll_path, char const* slash)
 {
   size_t size = (size_t)(slash - dll_path + 1);
   (void)memcpy(paths.ini, dll_path, size);
@@ -43,7 +43,7 @@ static void sc2k_paths(char* dll_path, char* slash)
   (void)strncat(paths.tilesets + size, "SCURKART", count);
 }
 
-static void root_paths(char* dll_path, char* slash)
+static void root_paths(char const* dll_path, char const* slash)
 {
   size_t size = (size_t)(slash - dll_path);
   (void)memcpy(paths.home,
@@ -57,12 +57,13 @@ static void root_paths(char* dll_path, char* slash)
 
 struct paths* paths_ctor(char const* dll_path)
 {
-  char* last_slash = find_reverse(dll_path, dll_path + strlen(dll_path), '\\');
+  char const* last_slash =
+      find_reverse(dll_path, dll_path + strlen(dll_path), '\\');
   if (last_slash == NULL) {
     return NULL;
   }
 
-  char* second_last_slash = find_reverse(dll_path, last_slash, '\\');
+  char const* second_last_slash = find_reverse(dll_path, last_slash, '\\');
   if (second_last_slash == NULL) {
     return NULL;
   }
