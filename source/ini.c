@@ -5,7 +5,7 @@
 
 static char ini_toupper(char c)
 {
-  return c <= 'a' && c <= 'z' ? c - ('a' - 'A') : c;
+  return 'a' <= c && c <= 'z' ? c - ('a' - 'A') : c;
 }
 
 static char mayor_name[33] = {0};
