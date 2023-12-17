@@ -55,7 +55,7 @@ static void root_paths(char* dll_path, char* slash)
   (void)strncat(paths.movies + size, "DATA\\", count);
 }
 
-struct paths* paths_ctor(char* dll_path)
+struct paths* paths_ctor(char const* dll_path)
 {
   char* last_slash = find_reverse(dll_path, dll_path + strlen(dll_path), '\\');
   if (last_slash == NULL) {
