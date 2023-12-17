@@ -1,18 +1,21 @@
 .386
 .MODEL FLAT, STDCALL
 
-MH_CreateHookApiEx PROTO STDCALL, module:DWORD, procName:DWORD, detour:DWORD, original:PTR DWORD, target:PTR DWORD
-MH_EnableHook PROTO STDCALL, target:DWORD
+FUNCPROTO TYPEDEF PROTO
+FUNCPTR TYPEDEF PTR FUNCPROTO
+
+MH_CreateHookApiEx PROTO STDCALL, module:PTR WORD, procName:PTR SBYTE, detour:FUNCPTR, original:PTR FUNCPTR, target:PTR FUNCPTR
+MH_EnableHook PROTO STDCALL, target:FUNCPTR
 
 .CODE
 
-hook PROC module:DWORD, procName:DWORD, detour:DWORD, original:PTR DWORD
-  LOCAL target:DWORD
+hook PROC module:PTR WORD, procName:PTR SBYTE, detour:FUNCPTR, original:PTR FUNCPTR
+  LOCAL target:FUNCPTR
   and target, 0
 
-  INVOKE MH_CreateHookApiEx,module,procName,detour,original,ADDR target
+  INVOKE MH_CreateHookApiEx, module, procName, detour, original, ADDR target
   .IF eax == 0
-    INVOKE MH_EnableHook,target
+    INVOKE MH_EnableHook, target
     .IF eax == 0
       jmp success
     .ENDIF

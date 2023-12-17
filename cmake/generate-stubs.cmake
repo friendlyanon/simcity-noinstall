@@ -11,7 +11,7 @@ set(calls "")
 set(def "EXPORTS\n")
 
 foreach(fn IN LISTS functions)
-  string(APPEND externs "EXTERN ${fn}_ptr:DWORD\n")
+  string(APPEND externs "EXTERN ${fn}_ptr:FUNCPTR\n")
   string(APPEND variables "FARPROC ${fn}_ptr = NULL;\n")
   string(APPEND thunks "\n_${fn} PROC\n  jmp dword ptr [${fn}_ptr]\n_${fn} ENDP\n")
   string(APPEND calls "\n      || get_fn(&${fn}_ptr, \"${fn}\")")
@@ -20,7 +20,10 @@ endforeach()
 
 file(WRITE "${output}/stubs-generated.asm" "\
 .386
-.MODEL FLAT, C
+.MODEL FLAT, STDCALL
+
+FUNCPROTO TYPEDEF PROTO
+FUNCPTR TYPEDEF PTR FUNCPROTO
 
 ${externs}
 .CODE
