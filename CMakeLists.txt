@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.5...3.16)
 
 if(CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR)
   message(FATAL_ERROR "In-source builds are not supported")
@@ -39,33 +39,32 @@ add_library(
     "${PROJECT_BINARY_DIR}/stubs-generated.def"
 )
 
-target_compile_definitions(
-    simcity-noinstall PRIVATE
-    NTDDI_VERSION=0x0A000007
-    _WIN32_WINNT=0x0A00
-    UNICODE=1
-    _UNICODE=1
-    _CRT_SECURE_NO_WARNINGS=1
-)
+target_compile_definitions(simcity-noinstall PRIVATE _CRT_SECURE_NO_WARNINGS=1)
 
-target_precompile_headers(simcity-noinstall PRIVATE [[<Windows.h>]])
-
-target_compile_features(simcity-noinstall PRIVATE c_std_99)
+if(NOT CMAKE_VERSION VERSION_LESS "3.16")
+  target_precompile_headers(simcity-noinstall PRIVATE [[<Windows.h>]])
+endif()
 
 target_include_directories(simcity-noinstall PRIVATE source)
 
 find_package(minhook REQUIRED)
 target_link_libraries(simcity-noinstall PRIVATE minhook::minhook shlwapi)
 
-find_path(STB_DS_INCLUDE_DIR stb_ds.h REQUIRED)
+find_path(STB_DS_INCLUDE_DIR stb_ds.h)
+if(NOT STB_DS_INCLUDE_DIR)
+  message(FATAL_ERROR "stb_ds.h not found (${STB_DS_INCLUDE_DIR})")
+endif()
+
 target_include_directories(simcity-noinstall SYSTEM PRIVATE "${STB_DS_INCLUDE_DIR}")
 set_property(SOURCE source/hooks.c PROPERTY COMPILE_DEFINITIONS STB_DS_IMPLEMENTATION=1)
 target_compile_definitions(simcity-noinstall PRIVATE STBDS_NO_SHORT_NAMES=1)
 
 install(TARGETS simcity-noinstall DESTINATION .)
-install(CODE [[
+if(NOT CMAKE_VERSION VERSION_LESS "3.14")
+  install(CODE [[
 get_filename_component(install_prefix "${CMAKE_INSTALL_PREFIX}" ABSOLUTE)
 message(STATUS "Renaming: ${install_prefix}/WINMM.DLL")
 file(REMOVE "${install_prefix}/WINMM.DLL")
 file(RENAME "${install_prefix}/$<TARGET_FILE_NAME:simcity-noinstall>" "${install_prefix}/WINMM.DLL")
 ]])
+endif()

@@ -20,6 +20,7 @@ char const* get_ini_string(char const* ini_path,
 {
   char* out = windows_sc2k;
   DWORD size = sizeof(windows_sc2k);
+  char uppercase_key[33] = {0};
   switch (key[0]) {
     case 'M':
       out = mayor_name;
@@ -39,7 +40,6 @@ char const* get_ini_string(char const* ini_path,
     return out;
   }
 
-  char uppercase_key[33] = {0};
   if (out != windows_sc2k) {
     size_t length = strlen(key);
     for (size_t i = 0; i != length; ++i) {

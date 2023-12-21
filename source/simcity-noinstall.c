@@ -3,15 +3,16 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "array_size.h"
 #include "hooks.h"
 #include "paths.h"
 #include "stubs.h"
 
-static char select_drive(char current_drive, char system_drive)
+static char select_drive(int current_drive, int system_drive)
 {
   char drive = 'A';
   for (;; ++drive) {
-    if (drive != current_drive && drive != system_drive) {
+    if (drive != ('A' + current_drive) && drive != ('A' + system_drive)) {
       break;
     }
   }
@@ -22,40 +23,42 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
   if (fdwReason == DLL_PROCESS_ATTACH) {
     char buffer[MAX_PATH] = {0};
+    int current_drive = 0;
+    struct paths* paths = NULL;
+    int system_drive = 0;
+    char drive = '\0';
     {
       UINT result =
-          GetModuleFileNameA((HMODULE)hinstDLL, buffer, _countof(buffer));
-      if (result == 0 || result >= _countof(buffer)) {
+          GetModuleFileNameA((HMODULE)hinstDLL, buffer, COUNTOF(buffer));
+      if (result == 0 || result >= COUNTOF(buffer)) {
         return FALSE;
       }
     }
 
-    int current_drive = PathGetDriveNumberA(buffer);
+    current_drive = PathGetDriveNumberA(buffer);
     if (current_drive == -1) {
       return FALSE;
     }
 
-    struct paths* paths = paths_ctor(buffer);
+    paths = paths_ctor(buffer);
     if (paths == NULL) {
       return FALSE;
     }
 
     {
-      UINT result = GetWindowsDirectoryA(buffer, _countof(buffer));
-      if (result == 0 || result >= _countof(buffer)) {
+      UINT result = GetWindowsDirectoryA(buffer, COUNTOF(buffer));
+      if (result == 0 || result >= COUNTOF(buffer)) {
         return FALSE;
       }
     }
 
-    int system_drive = PathGetDriveNumberA(buffer);
+    system_drive = PathGetDriveNumberA(buffer);
     if (system_drive == -1) {
       return FALSE;
     }
 
-    char selected_drive =
-        select_drive((char)('A' + current_drive), (char)('A' + system_drive));
-    return stubs_ctor() == 0 && hooks_ctor(paths, selected_drive) == 0 ? TRUE
-                                                                       : FALSE;
+    drive = select_drive(current_drive, system_drive);
+    return stubs_ctor() == 0 && hooks_ctor(paths, drive) == 0 ? TRUE : FALSE;
   }
 
   if (fdwReason == DLL_PROCESS_DETACH && lpvReserved == NULL) {

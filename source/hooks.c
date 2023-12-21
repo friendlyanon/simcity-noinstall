@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "MinHook.h"
+#include "array_size.h"
 #include "ini.h"
 #include "stb_ds.h"
 
@@ -45,16 +46,19 @@ static struct paths* paths = NULL;
 static char const* rewrite_path(char* buffer, char const* path)
 {
   size_t length = strlen(path);
-  size_t fake_length = _countof(fake_path) - 1;
+  size_t fake_length = COUNTOF(fake_path) - 1;
   if (length < fake_length || memcmp(fake_path, path, fake_length) != 0) {
     return path;
   }
 
-  size_t movies_length = strlen(paths->movies);
-  (void)memcpy(buffer, paths->movies, movies_length);
-  (void)memcpy(buffer + movies_length,
-               path + fake_length,
-               min(MAX_PATH - movies_length, length - fake_length));
+  {
+    size_t movies_length = strlen(paths->movies);
+    (void)memcpy(buffer, paths->movies, movies_length);
+    (void)memcpy(buffer + movies_length,
+                 path + fake_length,
+                 min(MAX_PATH - movies_length, length - fake_length));
+  }
+
   return buffer;
 }
 
@@ -336,10 +340,41 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
       hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
-int __stdcall hook(LPCWSTR pszModule,
-                   LPCSTR pszProcName,
-                   FARPROC pDetour,
-                   FARPROC* ppOriginal);
+static LRESULT(WINAPI* SendMessageA_ptr)(HWND, UINT, WPARAM, LPARAM) = NULL;
+
+static LRESULT WINAPI SendMessageA_fn(  //
+    HWND hWnd,
+    UINT Msg,
+    WPARAM wParam,
+    LPARAM lParam)
+{
+  return SendMessageA_ptr(hWnd, Msg, wParam, lParam);
+}
+
+static BOOL(WINAPI* PeekMessageA_ptr)(LPMSG, HWND, UINT, UINT, UINT) = NULL;
+
+static BOOL WINAPI PeekMessageA_fn(  //
+    LPMSG lpMsg,
+    HWND hWnd,
+    UINT wMsgFilterMin,
+    UINT wMsgFilterMax,
+    UINT wRemoveMsg)
+{
+  return PeekMessageA_ptr(
+      lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
+}
+
+static BOOL(WINAPI* UpdateWindow_ptr)(HWND) = NULL;
+
+static BOOL WINAPI UpdateWindow_fn(HWND hWnd)
+{
+  return UpdateWindow_ptr(hWnd);
+}
+
+int WINAPI hook(LPCWSTR pszModule,
+                LPCSTR pszProcName,
+                FARPROC pDetour,
+                FARPROC* ppOriginal);
 
 static void section_put(HKEY key, char const* value)
 {
@@ -454,7 +489,19 @@ int hooks_ctor(struct paths* paths_, char drive_)
       || hook(L"kernel32.dll",
               "CreateFileA",
               (FARPROC)CreateFileA_fn,
-              (FARPROC*)&CreateFileA_ptr);
+              (FARPROC*)&CreateFileA_ptr)
+      || hook(L"user32.dll",
+              "SendMessageA",
+              (FARPROC)SendMessageA_fn,
+              (FARPROC*)&SendMessageA_ptr)
+      || hook(L"user32.dll",
+              "PeekMessageA",
+              (FARPROC)PeekMessageA_fn,
+              (FARPROC*)&PeekMessageA_ptr)
+      || hook(L"user32.dll",
+              "UpdateWindow",
+              (FARPROC)UpdateWindow_fn,
+              (FARPROC*)&UpdateWindow_ptr);
 }
 
 int hooks_dtor()
@@ -465,9 +512,11 @@ int hooks_dtor()
   stbds_shfree(reg_map);
   stbds_shfree(paths_map);
 
-  MH_STATUS result = MH_Uninitialize();
-  if (result == MH_OK || result == MH_ERROR_NOT_INITIALIZED) {
-    return 0;
+  {
+    MH_STATUS result = MH_Uninitialize();
+    if (result == MH_OK || result == MH_ERROR_NOT_INITIALIZED) {
+      return 0;
+    }
   }
 
   return 1;

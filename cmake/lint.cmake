@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.5)
 
 macro(default name)
   if(NOT DEFINED "${name}")
@@ -40,7 +40,7 @@ foreach(file IN LISTS files)
 endforeach()
 
 if(NOT badly_formatted STREQUAL "")
-  list(JOIN badly_formatted "\n" bad_list)
-  message(NOTICE "The following files are badly formatted:\n\n${bad_list}\n")
+  string(REPLACE \; "\n" bad_list "${badly_formatted}")
+  message("The following files are badly formatted:\n\n${bad_list}\n")
   message(FATAL_ERROR "Run again with FIX=YES to fix these files.")
 endif()

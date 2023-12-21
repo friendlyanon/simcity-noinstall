@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.5)
 
 file(READ "${input}" functions)
 string(STRIP "${functions}" functions)

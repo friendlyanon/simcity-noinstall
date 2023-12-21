@@ -23,6 +23,8 @@ static char const* find_reverse(char const* begin, char const* end, char value)
 static void sc2k_paths(char const* dll_path, char const* slash)
 {
   size_t size = (size_t)(slash - dll_path + 1);
+  size_t count = PATHS_LENGTH - size - 1;
+
   (void)memcpy(paths.ini, dll_path, size);
   (void)memcpy(paths.data, dll_path, size);
   (void)memcpy(paths.graphics, dll_path, size);
@@ -32,7 +34,6 @@ static void sc2k_paths(char const* dll_path, char const* slash)
   (void)memcpy(paths.savegame, dll_path, size);
   (void)memcpy(paths.tilesets, dll_path, size);
 
-  size_t count = PATHS_LENGTH - size - 1;
   (void)strncat(paths.ini + size, "simcity-noinstall.ini", count);
   (void)strncat(paths.data + size, "DATA", count);
   (void)strncat(paths.graphics + size, "BITMAPS", count);
@@ -51,19 +52,19 @@ static void root_paths(char const* dll_path, char const* slash)
                size == sizeof("X:") - 1 ? sizeof("X:\\") - 1 : size);
   (void)memcpy(paths.movies, dll_path, size + 1);
 
-  size_t count = PATHS_LENGTH - size;
-  (void)strncat(paths.movies + size, "DATA\\", count);
+  (void)strncat(paths.movies + size, "DATA\\", PATHS_LENGTH - size);
 }
 
 struct paths* paths_ctor(char const* dll_path)
 {
   char const* last_slash =
       find_reverse(dll_path, dll_path + strlen(dll_path), '\\');
+  char const* second_last_slash = NULL;
   if (last_slash == NULL) {
     return NULL;
   }
 
-  char const* second_last_slash = find_reverse(dll_path, last_slash, '\\');
+  second_last_slash = find_reverse(dll_path, last_slash, '\\');
   if (second_last_slash == NULL) {
     return NULL;
   }
