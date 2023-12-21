@@ -16,9 +16,8 @@ hook PROC module:PTR WORD, procName:PTR SBYTE, detour:FUNCPTR, original:PTR FUNC
   INVOKE MH_CreateHookApiEx, module, procName, detour, original, ADDR target
   .IF eax == 0
     INVOKE MH_EnableHook, target
-    .IF eax == 0
-      jmp success
-    .ENDIF
+    test eax, eax
+    jz success
   .ENDIF
 
   xor eax, eax
