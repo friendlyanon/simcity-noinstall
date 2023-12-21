@@ -233,11 +233,12 @@ static LSTATUS APIENTRY RegSetValueExA_fn(  //
     CONST BYTE* lpData,
     DWORD cbData)
 {
-  if (dwType == REG_DWORD || dwType == REG_BINARY && cbData == sizeof(DWORD)) {
+  if (dwType == REG_DWORD || (dwType == REG_BINARY && cbData == sizeof(DWORD)))
+  {
     int i = stbds_hmgeti(section_map, hKey);
     if (i != -1) {
       set_ini_dword(
-          paths->ini, section_map[i].value, lpValueName, *(DWORD*)lpData);
+          paths->ini, section_map[i].value, lpValueName, *(CONST DWORD*)lpData);
       return ERROR_SUCCESS;
     }
   }
@@ -277,7 +278,8 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
 {
   if (hKey == PATHS_KEY) {
     if (strcmp("GOODIES", lpValueName) == 0) {
-      char drive[] = {fake_path[0], ':', '\\', '\0'};
+      char drive[] = "A:\\";
+      drive[0] = fake_path[0];
       out_string(drive, lpData, lpcbData);
     } else {
       size_t offset = stbds_shget(paths_map, lpValueName);
@@ -504,7 +506,7 @@ int hooks_ctor(struct paths* paths_, char drive_)
               (FARPROC*)&UpdateWindow_ptr);
 }
 
-int hooks_dtor()
+int hooks_dtor(void)
 {
   stbds_shfree(dword_map);
   stbds_shfree(string_map);

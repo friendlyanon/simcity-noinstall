@@ -1,0 +1,18 @@
+set(CMAKE_C_COMPILER [[@clang@]])
+set(CMAKE_RC_COMPILER [[@rc@]])
+set(CMAKE_ASM_MASM_COMPILER [[@ml@]])
+
+set(CMAKE_C_COMPILER_TARGET i686-pc-win32)
+
+set(CMAKE_EXE_LINKER_FLAGS "-Xlinker /safeseh:no")
+set(CMAKE_SHARED_LINKER_FLAGS "-Xlinker /safeseh:no")
+set(CMAKE_MODULE_LINKER_FLAGS "-Xlinker /safeseh:no")
+
+set(CMAKE_C_FLAGS "")
+if(CMAKE_PROJECT_NAME STREQUAL "minhook")
+  set(CMAKE_C_FLAGS "-include intrin.h")
+elseif(CMAKE_PROJECT_NAME STREQUAL "simcity-noinstall")
+  set(CMAKE_C_FLAGS "-Werror=strict-prototypes -Werror=write-strings -Werror=declaration-after-statement -Werror=c99-extensions -Wno-comment")
+  set(CMAKE_ASM_MASM_FLAGS /nologo)
+  include("$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+endif()

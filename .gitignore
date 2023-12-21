@@ -1,5 +1,6 @@
 **/.DS_Store
 .cache/
+.github/vcpkg/x86-windows-clang-toolchain.cmake
 .idea/
 .vs/
 .vscode/

@@ -9,6 +9,9 @@ on:
     branches:
     - master
 
+env:
+  VCPKG_COMMIT: "16ee2ecb31788c336ace8bb14c21801efb6836e4"
+
 jobs:
   lint:
     runs-on: ubuntu-22.04
@@ -19,7 +22,7 @@ jobs:
     - name: Lint
       run: cmake -D FORMAT_COMMAND=clang-format-14 -P cmake/lint.cmake
 
-  build:
+  clang:
     needs: [lint]
 
     runs-on: windows-2022
@@ -35,7 +38,39 @@ jobs:
     - name: Install vcpkg
       uses: friendlyanon/setup-vcpkg@v1
       with:
-        committish: "16ee2ecb31788c336ace8bb14c21801efb6836e4"
+        committish: ${{ env.VCPKG_COMMIT }}
+        cache-version: clang
+
+    - name: Setup toolchain file
+      run: cmake -P .github/vcpkg/toolchain.cmake
+
+    - name: Configure
+      run: cmake --preset=ci-clang
+
+    - name: Build
+      run: cmake --build build -j 2
+
+    - name: Install
+      run: cmake --install build --prefix prefix
+
+  msvc:
+    needs: [lint]
+
+    runs-on: windows-2022
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup MSVC
+      uses: ilammy/msvc-dev-cmd@v1
+      with:
+        arch: amd64_x86
+
+    - name: Install vcpkg
+      uses: friendlyanon/setup-vcpkg@v1
+      with:
+        committish: ${{ env.VCPKG_COMMIT }}
+        cache-version: msvc
 
     - name: Configure
       run: cmake --preset=ci-windows

@@ -8,7 +8,7 @@
 
 void* winmm_handle = NULL;
 
-int stubs_ctor()
+int stubs_ctor(void)
 {
   wchar_t buffer[MAX_PATH] = {0};
   wchar_t const* winmm = NULL;
@@ -32,7 +32,7 @@ int stubs_ctor()
   return stubs_load();
 }
 
-int stubs_dtor()
+int stubs_dtor(void)
 {
   if (winmm_handle == NULL) {
     return 0;
