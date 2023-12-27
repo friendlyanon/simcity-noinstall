@@ -34,6 +34,11 @@ add_library(
     source/simcity-noinstall.c
     source/stubs.c
     source/stubs.h
+    source/tables/dword_tbl.c
+    source/tables/paths_tbl.c
+    source/tables/reg_tbl.c
+    source/tables/section_tbl.c
+    source/tables/string_tbl.c
     "${PROJECT_BINARY_DIR}/stubs-generated.c"
     "${PROJECT_BINARY_DIR}/stubs-generated.asm"
     "${PROJECT_BINARY_DIR}/stubs-generated.def"
@@ -49,15 +54,6 @@ target_include_directories(simcity-noinstall PRIVATE source)
 
 find_package(minhook REQUIRED)
 target_link_libraries(simcity-noinstall PRIVATE minhook::minhook shlwapi)
-
-find_path(STB_DS_INCLUDE_DIR stb_ds.h)
-if(NOT STB_DS_INCLUDE_DIR)
-  message(FATAL_ERROR "stb_ds.h not found (${STB_DS_INCLUDE_DIR})")
-endif()
-
-target_include_directories(simcity-noinstall SYSTEM PRIVATE "${STB_DS_INCLUDE_DIR}")
-set_property(SOURCE source/hooks.c PROPERTY COMPILE_DEFINITIONS STB_DS_IMPLEMENTATION=1)
-target_compile_definitions(simcity-noinstall PRIVATE STBDS_NO_SHORT_NAMES=1)
 
 install(TARGETS simcity-noinstall DESTINATION .)
 if(NOT CMAKE_VERSION VERSION_LESS "3.14")

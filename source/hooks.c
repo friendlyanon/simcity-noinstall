@@ -8,7 +8,12 @@
 #include "MinHook.h"
 #include "array_size.h"
 #include "ini.h"
-#include "stb_ds.h"
+#include "reg_keys.h"
+#include "tables/dword_tbl.h"
+#include "tables/paths_tbl.h"
+#include "tables/reg_tbl.h"
+#include "tables/section_tbl.h"
+#include "tables/string_tbl.h"
 
 static char fake_path[] = "A:\\DATA\\";
 
@@ -128,24 +133,6 @@ static LSTATUS(APIENTRY* RegCreateKeyExA_ptr)(  //
     PHKEY,
     LPDWORD) = NULL;
 
-#define MAXIS_KEY ((HKEY)(ULONG_PTR)(0x80000040L))
-#define SC2K_KEY ((HKEY)(ULONG_PTR)(0x80000041L))
-#define PATHS_KEY ((HKEY)(ULONG_PTR)(0x80000042L))
-#define WINDOWS_KEY ((HKEY)(ULONG_PTR)(0x80000043L))
-#define VERSION_KEY ((HKEY)(ULONG_PTR)(0x80000044L))
-#define OPTIONS_KEY ((HKEY)(ULONG_PTR)(0x80000045L))
-#define LOCALIZE_KEY ((HKEY)(ULONG_PTR)(0x80000046L))
-#define REGISTRATION_KEY ((HKEY)(ULONG_PTR)(0x80000047L))
-#define SCURK_KEY ((HKEY)(ULONG_PTR)(0x80000048L))
-
-struct reg_entry
-{
-  char const* key;
-  HKEY value;
-};
-
-struct reg_entry* reg_map = NULL;
-
 static LSTATUS APIENTRY RegCreateKeyExA_fn(  //
     HKEY hKey,
     LPCSTR lpSubKey,
@@ -157,9 +144,9 @@ static LSTATUS APIENTRY RegCreateKeyExA_fn(  //
     PHKEY phkResult,
     LPDWORD lpdwDisposition)
 {
-  int index = stbds_shgeti(reg_map, lpSubKey);
-  if (index != -1) {
-    *phkResult = reg_map[index].value;
+  struct reg_entry const* entry = reg_lookup(lpSubKey, strlen(lpSubKey));
+  if (entry != NULL) {
+    *phkResult = (HKEY)(KEY_BASE + entry->value);
     return ERROR_SUCCESS;
   }
 
@@ -180,7 +167,7 @@ static LSTATUS(APIENTRY* RegCloseKey_ptr)(HKEY) = NULL;
 static LSTATUS APIENTRY RegCloseKey_fn(HKEY hKey)
 {
   ULONG_PTR value = (ULONG_PTR)hKey;
-  if ((ULONG_PTR)MAXIS_KEY <= value && value <= (ULONG_PTR)SCURK_KEY) {
+  if (IS_FAKE_KEY(value)) {
     return ERROR_SUCCESS;
   }
 
@@ -189,38 +176,6 @@ static LSTATUS APIENTRY RegCloseKey_fn(HKEY hKey)
 
 static LSTATUS(APIENTRY* RegQueryValueExA_ptr)(
     HKEY, LPCSTR, LPDWORD, LPDWORD, LPBYTE, LPDWORD) = NULL;
-
-struct paths_entry
-{
-  char const* key;
-  size_t value;
-};
-
-static struct paths_entry* paths_map = NULL;
-
-struct section_entry
-{
-  HKEY key;
-  char const* value;
-};
-
-static struct section_entry* section_map = NULL;
-
-struct string_entry
-{
-  char const* key;
-  char const* value;
-};
-
-static struct string_entry* string_map = NULL;
-
-struct dword_entry
-{
-  char const* key;
-  DWORD value;
-};
-
-static struct dword_entry* dword_map = NULL;
 
 static LSTATUS(APIENTRY* RegSetValueExA_ptr)(
     HKEY, LPCSTR, DWORD, DWORD, CONST BYTE*, DWORD) = NULL;
@@ -235,10 +190,11 @@ static LSTATUS APIENTRY RegSetValueExA_fn(  //
 {
   if (dwType == REG_DWORD || (dwType == REG_BINARY && cbData == sizeof(DWORD)))
   {
-    int i = stbds_hmgeti(section_map, hKey);
-    if (i != -1) {
+    struct section_entry const* entry = NULL;
+    SECTION_LOOKUP(entry, hKey);
+    if (entry != NULL) {
       set_ini_dword(
-          paths->ini, section_map[i].value, lpValueName, *(CONST DWORD*)lpData);
+          paths->ini, entry->value, lpValueName, *(CONST DWORD*)lpData);
       return ERROR_SUCCESS;
     }
   }
@@ -276,26 +232,26 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
     LPBYTE lpData,
     LPDWORD lpcbData)
 {
-  if (hKey == PATHS_KEY) {
+  if (IS_KEY(hKey, PATHS_KEY)) {
     if (strcmp("GOODIES", lpValueName) == 0) {
       char drive[] = "A:\\";
       drive[0] = fake_path[0];
       out_string(drive, lpData, lpcbData);
     } else {
-      size_t offset = stbds_shget(paths_map, lpValueName);
+      size_t offset = paths_lookup(lpValueName, strlen(lpValueName))->value;
       out_string((char const*)paths + offset, lpData, lpcbData);
     }
     return ERROR_SUCCESS;
   }
 
-  if (hKey == VERSION_KEY && strcmp("SimCity 2000", lpValueName) == 0) {
+  if (IS_KEY(hKey, VERSION_KEY) && strcmp("SimCity 2000", lpValueName) == 0) {
     out_dword(get_ini_dword(paths->ini, "VERSION", lpValueName, 256),
               lpData,
               lpcbData);
     return ERROR_SUCCESS;
   }
 
-  if (hKey == WINDOWS_KEY && strcmp("SimCity 2000", lpValueName) == 0) {
+  if (IS_KEY(hKey, WINDOWS_KEY) && strcmp("SimCity 2000", lpValueName) == 0) {
     out_string(get_ini_string(paths->ini, "Windows", lpValueName, "8 1"),
                lpData,
                lpcbData);
@@ -303,20 +259,24 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
   }
 
   {
-    int i = stbds_hmgeti(section_map, hKey);
-    if (i != -1) {
-      char const* section = section_map[i].value;
-      int j = stbds_shgeti(string_map, lpValueName);
-      if (j != -1) {
+    struct section_entry const* section_entry = NULL;
+    SECTION_LOOKUP(section_entry, hKey);
+    if (section_entry != NULL) {
+      char const* section = section_entry->value;
+      size_t value_length = strlen(lpValueName);
+      struct string_entry const* string_entry =
+          string_lookup(lpValueName, value_length);
+      if (string_entry != NULL) {
         out_string(get_ini_string(
-                       paths->ini, section, lpValueName, string_map[j].value),
+                       paths->ini, section, lpValueName, string_entry->value),
                    lpData,
                    lpcbData);
       } else {
-        int k = stbds_shgeti(dword_map, lpValueName);
-        if (k != -1) {
+        struct dword_entry const* dword_entry =
+            dword_lookup(lpValueName, value_length);
+        if (dword_entry != NULL) {
           out_dword(get_ini_dword(
-                        paths->ini, section, lpValueName, dword_map[k].value),
+                        paths->ini, section, lpValueName, dword_entry->value),
                     lpData,
                     lpcbData);
         } else {
@@ -378,79 +338,10 @@ int WINAPI hook(LPCWSTR pszModule,
                 FARPROC pDetour,
                 FARPROC* ppOriginal);
 
-static void section_put(HKEY key, char const* value)
-{
-  stbds_hmput(section_map, key, value);
-}
-
 int hooks_ctor(struct paths* paths_, char drive_)
 {
   paths = paths_;
   fake_path[0] = drive_;
-
-  stbds_sh_new_arena(paths_map);
-  stbds_shput(paths_map, "DATA", offsetof(struct paths, data));
-  stbds_shput(paths_map, "GRAPHICS", offsetof(struct paths, graphics));
-  stbds_shput(paths_map, "Music", offsetof(struct paths, sounds));
-  stbds_shput(paths_map, "MUSIC", offsetof(struct paths, sounds));
-  stbds_shput(paths_map, "SOUND", offsetof(struct paths, sounds));
-  stbds_shput(paths_map, "SCENARIOS", offsetof(struct paths, scenarios));
-  stbds_shput(paths_map, "HOME", offsetof(struct paths, home));
-  stbds_shput(paths_map, "CITIES", offsetof(struct paths, cities));
-  stbds_shput(paths_map, "Cities", offsetof(struct paths, cities));
-  stbds_shput(paths_map, "SAVEGAME", offsetof(struct paths, cities));
-  stbds_shput(paths_map, "TILESETS", offsetof(struct paths, tilesets));
-  stbds_shput(paths_map, "TileSets", offsetof(struct paths, tilesets));
-  stbds_shput(paths_map, "HOME", offsetof(struct paths, home));
-
-  stbds_sh_new_arena(reg_map);
-  stbds_shput(reg_map, "Maxis", MAXIS_KEY);
-  stbds_shput(reg_map, "SimCity 2000", SC2K_KEY);
-  stbds_shput(reg_map, "PATHS", PATHS_KEY);
-  stbds_shput(reg_map, "Paths", PATHS_KEY);
-  stbds_shput(reg_map, "Windows", WINDOWS_KEY);
-  stbds_shput(reg_map, "VERSION", VERSION_KEY);
-  stbds_shput(reg_map, "Version", VERSION_KEY);
-  stbds_shput(reg_map, "OPTIONS", OPTIONS_KEY);
-  stbds_shput(reg_map, "LOCALIZE", LOCALIZE_KEY);
-  stbds_shput(reg_map, "Localize", LOCALIZE_KEY);
-  stbds_shput(reg_map, "REGISTRATION", REGISTRATION_KEY);
-  stbds_shput(reg_map, "SCURK", SCURK_KEY);
-
-  section_put(WINDOWS_KEY, "Windows");
-  section_put(VERSION_KEY, "VERSION");
-  section_put(OPTIONS_KEY, "OPTIONS");
-  section_put(LOCALIZE_KEY, "LOCALIZE");
-  section_put(REGISTRATION_KEY, "REGISTRATION");
-  section_put(SCURK_KEY, "SCURK");
-
-  stbds_sh_new_arena(string_map);
-  stbds_shput(string_map, "Mayor Name", "MissingMayor");
-  stbds_shput(string_map, "MAYOR NAME", "MissingMayor");
-  stbds_shput(string_map, "Company Name", "MissingCompany");
-  stbds_shput(string_map, "COMPANY NAME", "MissingCompany");
-  stbds_shput(string_map, "Language", "USA");
-  stbds_shput(string_map, "LANGUAGE", "USA");
-
-  stbds_sh_new_arena(dword_map);
-  stbds_shput(dword_map, "AUTOBUDGET", 0);
-  stbds_shput(dword_map, "AUTOGOTO", 1);
-  stbds_shput(dword_map, "AUTOSAVE", 0);
-  stbds_shput(dword_map, "DISASTERS", 1);
-  stbds_shput(dword_map, "MUSIC", 1);
-  stbds_shput(dword_map, "SOUND", 1);
-  stbds_shput(dword_map, "SPEED", 1);
-  stbds_shput(dword_map, "CycleColors", 1);
-  stbds_shput(dword_map, "GridHeight", 2);
-  stbds_shput(dword_map, "GridWidth", 2);
-  stbds_shput(dword_map, "ShowClipRegion", 0);
-  stbds_shput(dword_map, "ShowDrawGrid", 0);
-  stbds_shput(dword_map, "SnapToGrid", 0);
-  stbds_shput(dword_map, "Speed", 1);
-  stbds_shput(dword_map, "Sound", 1);
-  stbds_shput(dword_map, "SCURK", 256);
-  stbds_shput(dword_map, "Color Check", 0);
-  stbds_shput(dword_map, "Last Color Depth", 32);
 
   if (MH_Initialize() != MH_OK) {
     return 1;
@@ -508,17 +399,9 @@ int hooks_ctor(struct paths* paths_, char drive_)
 
 int hooks_dtor(void)
 {
-  stbds_shfree(dword_map);
-  stbds_shfree(string_map);
-  stbds_hmfree(section_map);
-  stbds_shfree(reg_map);
-  stbds_shfree(paths_map);
-
-  {
-    MH_STATUS result = MH_Uninitialize();
-    if (result == MH_OK || result == MH_ERROR_NOT_INITIALIZED) {
-      return 0;
-    }
+  MH_STATUS result = MH_Uninitialize();
+  if (result == MH_OK || result == MH_ERROR_NOT_INITIALIZED) {
+    return 0;
   }
 
   return 1;

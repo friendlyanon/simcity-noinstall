@@ -6,6 +6,7 @@
 .vscode/
 build/
 cmake-build-*/
+gperf/
 prefix/
 .clangd
 CMakeLists.txt.user
