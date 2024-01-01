@@ -8,6 +8,10 @@
 #include "paths.h"
 #include "stubs.h"
 
+#ifndef Abort
+#  define Abort abort
+#endif
+
 static char select_drive(int current_drive, int system_drive)
 {
   char drive = 'A';
@@ -63,7 +67,7 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 
   if (fdwReason == DLL_PROCESS_DETACH && lpvReserved == NULL) {
     if (hooks_dtor() != 0 || stubs_dtor() != 0) {
-      abort();
+      Abort();
     }
   }
 
