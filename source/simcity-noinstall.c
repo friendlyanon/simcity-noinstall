@@ -32,9 +32,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     int system_drive = 0;
     char drive = '\0';
     {
-      UINT result =
-          GetModuleFileNameA((HMODULE)hinstDLL, buffer, COUNTOF(buffer));
-      if (result == 0 || result >= COUNTOF(buffer)) {
+      UINT result = GetModuleFileNameA(hinstDLL, buffer, countof(buffer));
+      if (result == 0 || result >= countof(buffer)) {
         return FALSE;
       }
     }
@@ -50,8 +49,8 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     }
 
     {
-      UINT result = GetWindowsDirectoryA(buffer, COUNTOF(buffer));
-      if (result == 0 || result >= COUNTOF(buffer)) {
+      UINT result = GetWindowsDirectoryA(buffer, countof(buffer));
+      if (result == 0 || result >= countof(buffer)) {
         return FALSE;
       }
     }

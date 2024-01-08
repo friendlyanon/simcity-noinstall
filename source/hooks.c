@@ -51,7 +51,7 @@ static struct paths* paths = NULL;
 static char const* rewrite_path(char* buffer, char const* path)
 {
   size_t length = strlen(path);
-  size_t fake_length = COUNTOF(fake_path) - 1;
+  size_t fake_length = lengthof(fake_path);
   if (length < fake_length || memcmp(fake_path, path, fake_length) != 0) {
     return path;
   }
@@ -281,8 +281,8 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
                     lpcbData);
         } else {
           size_t value_len = strlen(lpValueName);
-          size_t prefix_len = sizeof(MESSAGE_PREFIX) - 1;
-          size_t remaining = sizeof(unknown_value_message) - prefix_len - 1;
+          size_t prefix_len = lengthof(MESSAGE_PREFIX);
+          size_t remaining = lengthof(unknown_value_message) - prefix_len;
           (void)memcpy(unknown_value_message + prefix_len,
                        lpValueName,
                        min(value_len + 1, remaining));

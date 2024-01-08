@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+#include "array_size.h"
+
 static struct paths paths = {0};
 
 static char const* find_reverse(char const* begin, char const* end, char value)
@@ -47,9 +49,8 @@ static void sc2k_paths(char const* dll_path, char const* slash)
 static void root_paths(char const* dll_path, char const* slash)
 {
   size_t size = (size_t)(slash - dll_path);
-  (void)memcpy(paths.home,
-               dll_path,
-               size == sizeof("X:") - 1 ? sizeof("X:\\") - 1 : size);
+  (void)memcpy(
+      paths.home, dll_path, size == lengthof("X:") ? lengthof("X:\\") : size);
   (void)memcpy(paths.movies, dll_path, size + 1);
 
   (void)strncat(paths.movies + size, "DATA\\", PATHS_LENGTH - size);

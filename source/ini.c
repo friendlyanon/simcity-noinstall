@@ -21,20 +21,20 @@ char const* get_ini_string(char const* ini_path,
                            char const* default_)
 {
   char* out = windows_sc2k;
-  DWORD size = COUNTOF(windows_sc2k);
+  DWORD size = countof(windows_sc2k);
   char uppercase_key[33] = {0};
   switch (key[0]) {
     case 'M':
       out = mayor_name;
-      size = COUNTOF(mayor_name);
+      size = countof(mayor_name);
       break;
     case 'C':
       out = company_name;
-      size = COUNTOF(company_name);
+      size = countof(company_name);
       break;
     case 'L':
       out = language;
-      size = COUNTOF(language);
+      size = countof(language);
       break;
   }
 
@@ -67,7 +67,7 @@ unsigned long get_ini_dword(char const* ini_path,
   unsigned long value = default_;
   char buffer[11] = {0};
   (void)GetPrivateProfileStringA(
-      section, key, "", buffer, COUNTOF(buffer), ini_path);
+      section, key, "", buffer, countof(buffer), ini_path);
   if (GetLastError() != ERROR_SUCCESS) {
     return value;
   }

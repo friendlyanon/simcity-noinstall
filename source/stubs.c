@@ -12,17 +12,17 @@ int stubs_ctor(void)
 {
   wchar_t buffer[MAX_PATH] = {0};
   wchar_t const* winmm = NULL;
-  UINT dir_length = GetSystemDirectoryW(buffer, COUNTOF(buffer));
-  if (dir_length == 0 || dir_length >= COUNTOF(buffer)) {
+  UINT dir_length = GetSystemDirectoryW(buffer, countof(buffer));
+  if (dir_length == 0 || dir_length >= countof(buffer)) {
     return 1;
   }
 
   winmm = L"\\winmm.dll";
-  if (buffer[min(dir_length - 1, COUNTOF(buffer) - 2)] == L'\\') {
+  if (buffer[min(dir_length - 1, countof(buffer) - 2)] == L'\\') {
     winmm += 1;
   }
 
-  (void)wcsncat(buffer + dir_length, winmm, COUNTOF(buffer) - dir_length);
+  (void)wcsncat(buffer + dir_length, winmm, countof(buffer) - dir_length);
 
   winmm_handle = LoadLibraryW(buffer);
   if (winmm_handle == NULL) {
