@@ -302,35 +302,35 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
       hKey, lpValueName, lpReserved, lpType, lpData, lpcbData);
 }
 
-static LRESULT(WINAPI* SendMessageA_ptr)(HWND, UINT, WPARAM, LPARAM) = NULL;
+static HWND main_window = NULL;
 
-static LRESULT WINAPI SendMessageA_fn(  //
-    HWND hWnd,
-    UINT Msg,
-    WPARAM wParam,
-    LPARAM lParam)
+static HMENU(WINAPI* GetMenu_ptr)(HWND) = NULL;
+
+#define TITLE "SimCity 2000"
+
+static HMENU WINAPI GetMenu_fn(HWND hWnd)
 {
-  return SendMessageA_ptr(hWnd, Msg, wParam, lParam);
+  if (main_window == NULL) {
+    char buffer[countof(TITLE)];
+    if (GetWindowTextA(hWnd, buffer, countof(TITLE)) == lengthof(TITLE)
+        && memcmp(TITLE, buffer, countof(TITLE)) == 0)
+    {
+      main_window = hWnd;
+    }
+  }
+
+  return GetMenu_ptr(hWnd);
 }
 
-static BOOL(WINAPI* PeekMessageA_ptr)(LPMSG, HWND, UINT, UINT, UINT) = NULL;
+static int(WINAPI* ReleaseDC_ptr)(HWND, HDC) = NULL;
 
-static BOOL WINAPI PeekMessageA_fn(  //
-    LPMSG lpMsg,
-    HWND hWnd,
-    UINT wMsgFilterMin,
-    UINT wMsgFilterMax,
-    UINT wRemoveMsg)
+static int WINAPI ReleaseDC_fn(HWND hWnd, HDC hDC)
 {
-  return PeekMessageA_ptr(
-      lpMsg, hWnd, wMsgFilterMin, wMsgFilterMax, wRemoveMsg);
-}
+  if (main_window != NULL && main_window == hWnd) {
+    (void)RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
+  }
 
-static BOOL(WINAPI* UpdateWindow_ptr)(HWND) = NULL;
-
-static BOOL WINAPI UpdateWindow_fn(HWND hWnd)
-{
-  return UpdateWindow_ptr(hWnd);
+  return ReleaseDC_ptr(hWnd, hDC);
 }
 
 int WINAPI hook(LPCWSTR pszModule,
@@ -384,17 +384,13 @@ int hooks_ctor(struct paths* paths_, char drive_)
               (FARPROC)CreateFileA_fn,
               (FARPROC*)&CreateFileA_ptr)
       || hook(L"user32.dll",
-              "SendMessageA",
-              (FARPROC)SendMessageA_fn,
-              (FARPROC*)&SendMessageA_ptr)
+              "GetMenu",
+              (FARPROC)GetMenu_fn,
+              (FARPROC*)&GetMenu_ptr)
       || hook(L"user32.dll",
-              "PeekMessageA",
-              (FARPROC)PeekMessageA_fn,
-              (FARPROC*)&PeekMessageA_ptr)
-      || hook(L"user32.dll",
-              "UpdateWindow",
-              (FARPROC)UpdateWindow_fn,
-              (FARPROC*)&UpdateWindow_ptr);
+              "ReleaseDC",
+              (FARPROC)ReleaseDC_fn,
+              (FARPROC*)&ReleaseDC_ptr);
 }
 
 int hooks_dtor(void)
