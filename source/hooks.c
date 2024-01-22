@@ -46,7 +46,7 @@ static BOOL WINAPI GetVolumeInformationA_fn(  //
       nFileSystemNameSize);
 }
 
-static struct paths* paths = NULL;
+static struct paths const* paths = NULL;
 
 static char const* rewrite_path(char* buffer, char const* path)
 {
@@ -338,7 +338,7 @@ int WINAPI hook(LPCWSTR pszModule,
                 FARPROC pDetour,
                 FARPROC* ppOriginal);
 
-int hooks_ctor(struct paths* paths_, char drive_)
+int hooks_ctor(struct paths const* paths_, char drive_)
 {
   paths = paths_;
   fake_path[0] = drive_;
