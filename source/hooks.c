@@ -7,6 +7,7 @@
 
 #include "MinHook.h"
 #include "array_size.h"
+#include "float.h"
 #include "ini.h"
 #include "reg_keys.h"
 #include "tables/dword_tbl.h"
@@ -333,15 +334,89 @@ static int WINAPI ReleaseDC_fn(HWND hWnd, HDC hDC)
   return ReleaseDC_ptr(hWnd, hDC);
 }
 
+static struct screen const* screen = NULL;
+
+static int(WINAPI* StretchDIBits_ptr)(  //
+    HDC,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    int,
+    VOID const*,
+    BITMAPINFO const*,
+    UINT,
+    DWORD) = NULL;
+
+static int WINAPI StretchDIBits_fn(  //
+    HDC hdc,
+    int xDest,
+    int yDest,
+    int DestWidth,
+    int DestHeight,
+    int xSrc,
+    int ySrc,
+    int SrcWidth,
+    int SrcHeight,
+    VOID const* lpBits,
+    BITMAPINFO const* lpbmi,
+    UINT iUsage,
+    DWORD rop)
+{
+  {
+    struct scaled scaled = scale(&DestWidth, &DestHeight);
+    DestWidth = scaled.width;
+    DestHeight = scaled.height;
+  }
+
+  xDest -= screen->half_width;
+  yDest -= screen->half_height;
+
+  {
+    int x_sign = xDest < 0 ? -1 : 1;
+    int y_sign = yDest < 0 ? -1 : 1;
+    xDest *= x_sign;
+    yDest *= y_sign;
+
+    {
+      struct scaled scaled = scale(&xDest, &yDest);
+      xDest = scaled.width * x_sign;
+      yDest = scaled.height * y_sign;
+    }
+  }
+
+  return StretchDIBits_ptr(  //
+      hdc,
+      xDest + screen->half_width,
+      yDest + screen->half_height,
+      DestWidth,
+      DestHeight,
+      xSrc,
+      ySrc,
+      SrcWidth,
+      SrcHeight,
+      lpBits,
+      lpbmi,
+      iUsage,
+      rop);
+}
+
 int WINAPI hook(LPCWSTR pszModule,
                 LPCSTR pszProcName,
                 FARPROC pDetour,
                 FARPROC* ppOriginal);
 
-int hooks_ctor(struct paths const* paths_, char drive_)
+int hooks_ctor(  //
+    struct paths const* paths_,
+    char drive_,
+    struct screen const* screen_)
 {
   paths = paths_;
   fake_path[0] = drive_;
+  screen = screen_;
 
   if (MH_Initialize() != MH_OK) {
     return 1;
@@ -390,7 +465,11 @@ int hooks_ctor(struct paths const* paths_, char drive_)
       || hook(L"user32.dll",
               "ReleaseDC",
               (FARPROC)ReleaseDC_fn,
-              (FARPROC*)&ReleaseDC_ptr);
+              (FARPROC*)&ReleaseDC_ptr)
+      || hook(L"gdi32.dll",
+              "StretchDIBits",
+              (FARPROC)StretchDIBits_fn,
+              (FARPROC*)&StretchDIBits_ptr);
 }
 
 int hooks_dtor(void)

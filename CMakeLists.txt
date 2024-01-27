@@ -24,6 +24,8 @@ add_custom_command(
 
 add_library(
     simcity-noinstall MODULE
+    source/float.asm
+    source/float.h
     source/hooks.asm
     source/hooks.c
     source/hooks.h

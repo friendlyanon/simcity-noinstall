@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "array_size.h"
+#include "float.h"
 #include "hooks.h"
 #include "paths.h"
 #include "stubs.h"
@@ -11,6 +12,8 @@
 #ifndef Abort
 #  define Abort abort
 #endif
+
+static struct screen screen = {0};
 
 static char select_drive(int current_drive, int system_drive)
 {
@@ -26,11 +29,23 @@ static char select_drive(int current_drive, int system_drive)
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
 {
   if (fdwReason == DLL_PROCESS_ATTACH) {
+    RECT rect = {0};
     char buffer[MAX_PATH] = {0};
     int current_drive = 0;
     struct paths* paths = NULL;
     int system_drive = 0;
     char drive = '\0';
+
+    if (GetWindowRect(GetDesktopWindow(), &rect) == 0 || rect.right <= 0
+        || rect.bottom <= 0 || rect.right > 65535 || rect.bottom > 65535)
+    {
+      return FALSE;
+    }
+
+    screen.half_width = (int)rect.right / 2;
+    screen.half_height = (int)rect.bottom / 2;
+    calculate_growth(&rect.right, &rect.bottom);
+
     {
       UINT result = GetModuleFileNameA(hinstDLL, buffer, countof(buffer));
       if (result == 0 || result >= countof(buffer)) {
@@ -61,7 +76,9 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
     }
 
     drive = select_drive(current_drive, system_drive);
-    return stubs_ctor() == 0 && hooks_ctor(paths, drive) == 0 ? TRUE : FALSE;
+    return stubs_ctor() == 0 && hooks_ctor(paths, drive, &screen) == 0  //
+        ? TRUE
+        : FALSE;
   }
 
   if (fdwReason == DLL_PROCESS_DETACH && lpvReserved == NULL) {
