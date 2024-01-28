@@ -394,8 +394,8 @@ static int WINAPI StretchDIBits_fn(  //
   if (hdc != last_device_context || hit_count != 2) {
     {
       struct scaled scaled = scale(&DestWidth, &DestHeight);
-      DestWidth = scaled.width;
-      DestHeight = scaled.height;
+      DestWidth = scaled.a;
+      DestHeight = scaled.b;
     }
 
     xDest -= screen->half_width;
@@ -409,8 +409,8 @@ static int WINAPI StretchDIBits_fn(  //
 
       {
         struct scaled scaled = scale(&xDest, &yDest);
-        xDest = scaled.width * x_sign;
-        yDest = scaled.height * y_sign;
+        xDest = scaled.a * x_sign;
+        yDest = scaled.b * y_sign;
       }
     }
 

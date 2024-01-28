@@ -42,9 +42,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD fdwReason, LPVOID lpvReserved)
       return FALSE;
     }
 
-    screen.half_width = (int)rect.right / 2;
-    screen.half_height = (int)rect.bottom / 2;
-    calculate_growth(&rect.right, &rect.bottom);
+    {
+      int width = (int)rect.right;
+      int height = (int)rect.bottom;
+      screen.half_width = width / 2;
+      screen.half_height = height / 2;
+      calculate_growth(&width, &height);
+    }
 
     {
       UINT result = GetModuleFileNameA(hinstDLL, buffer, countof(buffer));

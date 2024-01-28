@@ -2,14 +2,14 @@
 
 struct scaled
 {
-  unsigned int width;
-  unsigned int height;
+  int a;
+  int b;
 };
 
 #ifndef FLOATAPI
 #  define FLOATAPI __fastcall
 #endif
 
-void FLOATAPI calculate_growth(void const* width, void const* height);
+void FLOATAPI calculate_growth(int const* width, int const* height);
 
-struct scaled FLOATAPI scale(void const* width, void const* height);
+struct scaled FLOATAPI scale(int const* a, int const* b);

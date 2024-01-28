@@ -42,7 +42,7 @@ return:
   ret
 @calculate_growth@8 ENDP
 
-@scale@8 PROC ; ecx = width:PTR, edx = height:PTR
+@scale@8 PROC ; ecx = a:PTR, edx = b:PTR
   add esp, -4
 
   fild DWORD PTR [edx]
@@ -63,6 +63,6 @@ return:
 
   add esp, 4
   ret
-@scale@8 ENDP ; eax = width, edx = height
+@scale@8 ENDP ; eax = a, edx = b
 
 END
