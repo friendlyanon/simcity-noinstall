@@ -323,6 +323,9 @@ static HMENU WINAPI GetMenu_fn(HWND hWnd)
   return GetMenu_ptr(hWnd);
 }
 
+static HDC last_device_context = NULL;
+static int hit_count = 0;
+
 static int(WINAPI* ReleaseDC_ptr)(HWND, HDC) = NULL;
 
 static int WINAPI ReleaseDC_fn(HWND hWnd, HDC hDC)
@@ -331,7 +334,29 @@ static int WINAPI ReleaseDC_fn(HWND hWnd, HDC hDC)
     (void)RedrawWindow(hWnd, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
   }
 
+  last_device_context = NULL;
+  hit_count = 0;
   return ReleaseDC_ptr(hWnd, hDC);
+}
+
+static int(WINAPI* FillRect_ptr)(HDC, RECT CONST*, HBRUSH) = NULL;
+
+static int WINAPI FillRect_fn(HDC hDC, RECT CONST* lprc, HBRUSH hbr)
+{
+  if (hDC == last_device_context) {
+    ++hit_count;
+  }
+
+  return FillRect_ptr(hDC, lprc, hbr);
+}
+
+static UINT(WINAPI* RealizePalette_ptr)(HDC) = NULL;
+
+static UINT WINAPI RealizePalette_fn(HDC hdc)
+{
+  last_device_context = hdc;
+  hit_count = 1;
+  return RealizePalette_ptr(hdc);
 }
 
 static struct screen const* screen = NULL;
@@ -366,32 +391,37 @@ static int WINAPI StretchDIBits_fn(  //
     UINT iUsage,
     DWORD rop)
 {
-  {
-    struct scaled scaled = scale(&DestWidth, &DestHeight);
-    DestWidth = scaled.width;
-    DestHeight = scaled.height;
-  }
+  if (hdc != last_device_context || hit_count != 2) {
+    {
+      struct scaled scaled = scale(&DestWidth, &DestHeight);
+      DestWidth = scaled.width;
+      DestHeight = scaled.height;
+    }
 
-  xDest -= screen->half_width;
-  yDest -= screen->half_height;
-
-  {
-    int x_sign = xDest < 0 ? -1 : 1;
-    int y_sign = yDest < 0 ? -1 : 1;
-    xDest *= x_sign;
-    yDest *= y_sign;
+    xDest -= screen->half_width;
+    yDest -= screen->half_height;
 
     {
-      struct scaled scaled = scale(&xDest, &yDest);
-      xDest = scaled.width * x_sign;
-      yDest = scaled.height * y_sign;
+      int x_sign = xDest < 0 ? -1 : 1;
+      int y_sign = yDest < 0 ? -1 : 1;
+      xDest *= x_sign;
+      yDest *= y_sign;
+
+      {
+        struct scaled scaled = scale(&xDest, &yDest);
+        xDest = scaled.width * x_sign;
+        yDest = scaled.height * y_sign;
+      }
     }
+
+    xDest += screen->half_width;
+    yDest += screen->half_height;
   }
 
   return StretchDIBits_ptr(  //
       hdc,
-      xDest + screen->half_width,
-      yDest + screen->half_height,
+      xDest,
+      yDest,
       DestWidth,
       DestHeight,
       xSrc,
@@ -466,6 +496,14 @@ int hooks_ctor(  //
               "ReleaseDC",
               (FARPROC)ReleaseDC_fn,
               (FARPROC*)&ReleaseDC_ptr)
+      || hook(L"user32.dll",
+              "FillRect",
+              (FARPROC)FillRect_fn,
+              (FARPROC*)&FillRect_ptr)
+      || hook(L"gdi32.dll",
+              "RealizePalette",
+              (FARPROC)RealizePalette_fn,
+              (FARPROC*)&RealizePalette_ptr)
       || hook(L"gdi32.dll",
               "StretchDIBits",
               (FARPROC)StretchDIBits_fn,
