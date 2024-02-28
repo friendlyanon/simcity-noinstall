@@ -10,11 +10,7 @@
 #include "float.h"
 #include "ini.h"
 #include "reg_keys.h"
-#include "tables/dword_tbl.h"
-#include "tables/paths_tbl.h"
-#include "tables/reg_tbl.h"
-#include "tables/section_tbl.h"
-#include "tables/string_tbl.h"
+#include "tables.h"
 
 static char fake_path[] = "A:\\DATA\\";
 
@@ -145,9 +141,9 @@ static LSTATUS APIENTRY RegCreateKeyExA_fn(  //
     PHKEY phkResult,
     LPDWORD lpdwDisposition)
 {
-  struct reg_entry const* entry = reg_lookup(lpSubKey, strlen(lpSubKey));
-  if (entry != NULL) {
-    *phkResult = (HKEY)(KEY_BASE + entry->value);
+  unsigned long const* reg = reg_lookup(lpSubKey, strlen(lpSubKey));
+  if (reg != NULL) {
+    *phkResult = (HKEY)(KEY_BASE + *reg);
     return ERROR_SUCCESS;
   }
 
@@ -191,11 +187,9 @@ static LSTATUS APIENTRY RegSetValueExA_fn(  //
 {
   if (dwType == REG_DWORD || (dwType == REG_BINARY && cbData == sizeof(DWORD)))
   {
-    struct section_entry const* entry = NULL;
-    SECTION_LOOKUP(entry, hKey);
-    if (entry != NULL) {
-      set_ini_dword(
-          paths->ini, entry->value, lpValueName, *(CONST DWORD*)lpData);
+    char const* const* section = section_lookup((DWORD)hKey);
+    if (section != NULL) {
+      set_ini_dword(paths->ini, *section, lpValueName, *(CONST DWORD*)lpData);
       return ERROR_SUCCESS;
     }
   }
@@ -239,7 +233,7 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
       drive[0] = fake_path[0];
       out_string(drive, lpData, lpcbData);
     } else {
-      size_t offset = paths_lookup(lpValueName, strlen(lpValueName))->value;
+      size_t offset = *paths_lookup(lpValueName, strlen(lpValueName));
       out_string((char const*)paths + offset, lpData, lpcbData);
     }
     return ERROR_SUCCESS;
@@ -260,24 +254,18 @@ static LSTATUS APIENTRY RegQueryValueExA_fn(  //
   }
 
   {
-    struct section_entry const* section_entry = NULL;
-    SECTION_LOOKUP(section_entry, hKey);
-    if (section_entry != NULL) {
-      char const* section = section_entry->value;
+    char const* const* section = section_lookup((DWORD)hKey);
+    if (section != NULL) {
       size_t value_length = strlen(lpValueName);
-      struct string_entry const* string_entry =
-          string_lookup(lpValueName, value_length);
-      if (string_entry != NULL) {
-        out_string(get_ini_string(
-                       paths->ini, section, lpValueName, string_entry->value),
+      char const* const* string = string_lookup(lpValueName, value_length);
+      if (string != NULL) {
+        out_string(get_ini_string(paths->ini, *section, lpValueName, *string),
                    lpData,
                    lpcbData);
       } else {
-        struct dword_entry const* dword_entry =
-            dword_lookup(lpValueName, value_length);
-        if (dword_entry != NULL) {
-          out_dword(get_ini_dword(
-                        paths->ini, section, lpValueName, dword_entry->value),
+        unsigned long const* dword = dword_lookup(lpValueName, value_length);
+        if (dword != NULL) {
+          out_dword(get_ini_dword(paths->ini, *section, lpValueName, *dword),
                     lpData,
                     lpcbData);
         } else {

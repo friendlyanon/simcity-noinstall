@@ -36,11 +36,8 @@ add_library(
     source/simcity-noinstall.c
     source/stubs.c
     source/stubs.h
-    source/tables/dword_tbl.c
-    source/tables/paths_tbl.c
-    source/tables/reg_tbl.c
-    source/tables/section_tbl.c
-    source/tables/string_tbl.c
+    source/tables.c
+    source/tables.h
     "${PROJECT_BINARY_DIR}/stubs-generated.c"
     "${PROJECT_BINARY_DIR}/stubs-generated.asm"
     "${PROJECT_BINARY_DIR}/stubs-generated.def"
