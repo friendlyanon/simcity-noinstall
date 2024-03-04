@@ -37,7 +37,8 @@ struct sv_to_size_entry
 #define LOOKUP_STR(ret, name) \
   ret const* name##_lookup(char const* key, size_t size) \
   { \
-    for (size_t i = 0; i != countof(name##_table); ++i) { \
+    size_t i = 0; \
+    for (; i != countof(name##_table); ++i) { \
       if (size == name##_table[i].key.size \
           && key[0] == name##_table[i].key.data[0] \
           && memcmp(key + 1, name##_table[i].key.data + 1, size - 1) == 0) \
@@ -140,7 +141,8 @@ char const* const* section_lookup(unsigned long key)
   key -= KEY_BASE;
 
   {
-    for (size_t i = 0; i != countof(section_table); ++i) {
+    size_t i = 0
+    for (; i != countof(section_table); ++i) {
       if (section_table[i].key == key) {
         return &section_table[i].value;
       }
