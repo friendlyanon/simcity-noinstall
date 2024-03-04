@@ -141,7 +141,7 @@ char const* const* section_lookup(unsigned long key)
   key -= KEY_BASE;
 
   {
-    size_t i = 0
+    size_t i = 0;
     for (; i != countof(section_table); ++i) {
       if (section_table[i].key == key) {
         return &section_table[i].value;
