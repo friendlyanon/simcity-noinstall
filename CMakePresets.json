@@ -67,6 +67,7 @@
         "CMAKE_BUILD_TYPE": "Release",
         "VCPKG_OVERLAY_TRIPLETS": "${sourceDir}/.github/vcpkg",
         "VCPKG_TARGET_TRIPLET": "x86-windows-clang",
+        "VCPKG_DISABLE_COMPILER_TRACKING": "1",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/.github/vcpkg/x86-windows-clang-toolchain.cmake"
       }
     }
