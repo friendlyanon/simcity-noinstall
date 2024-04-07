@@ -344,8 +344,8 @@ int main(void)
 
       if (begin == 0) {
         STRING(message,
-               "Line too long (longer than " STRINGIFY(
-                   LINE_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
+               "Line too long (longer than " STRINGIFY(LINE_BUFFER_SIZE)
+               " bytes) or output contains no newline. Part of the line:" CRLF);
         code = output(stderr, message, sizeof(message))
                 || output(stderr, line.buffer, line.size) || output_lf(stderr)
             ? 2
