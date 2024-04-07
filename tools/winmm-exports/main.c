@@ -262,14 +262,10 @@ static int process_current_line(struct string_view string, int* done)
 }
 
 #ifdef NO_CRT
-#  define ENTRY() void mainCRTStartup(void)
-#  define EXIT(x) ExitProcess(x)
+void mainCRTStartup(void)
 #else
-#  define ENTRY() int main(void)
-#  define EXIT(x) return x
+int main(void)
 #endif
-
-ENTRY()
 {
   int code = 0;
   int done = 0;
@@ -368,5 +364,9 @@ ENTRY()
   }
 
 exit:
-  EXIT(code);
+#ifdef NO_CRT
+  ExitProcess(code);
+#else
+  return code;
+#endif
 }
