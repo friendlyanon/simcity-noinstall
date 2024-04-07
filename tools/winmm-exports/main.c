@@ -23,18 +23,6 @@ static int is_whitespace(char c)
       || c == '\v';
 }
 
-static void sv_right_trim(struct string_view* string)
-{
-  size_t i = string->size;
-  for (; i != 0; --i) {
-    if (!is_whitespace(string->data[i - 1])) {
-      break;
-    }
-  }
-
-  string->size = i;
-}
-
 static void sv_remove_prefix(struct string_view* string, size_t amount)
 {
   if (string->size <= amount) {
@@ -45,6 +33,17 @@ static void sv_remove_prefix(struct string_view* string, size_t amount)
 
   string->data += amount;
   string->size -= amount;
+}
+
+static void sv_remove_suffix(struct string_view* string, size_t amount)
+{
+  if (string->size > amount) {
+    string->size -= amount;
+    return;
+  }
+
+  string->data = NULL;
+  string->size = 0;
 }
 
 static void sv_left_trim(struct string_view* string)
@@ -59,6 +58,31 @@ static void sv_left_trim(struct string_view* string)
   if (i != 0) {
     sv_remove_prefix(string, i);
   }
+}
+
+static int sv_equals(struct string_view a, struct string_view b)
+{
+  if (a.size != b.size) {
+    return 0;
+  }
+
+  return a.size == 0 ? 1 : memcmp(a.data, b.data, a.size) == 0;
+}
+
+static struct string_view sv_substr(struct string_view string,
+                                    size_t offset,
+                                    size_t length)
+{
+  size_t size = string.size;
+  string.size = 0;
+  if (size >= offset) {
+    string.data += offset;
+    if (size - offset >= length) {
+      string.size = length;
+    }
+  }
+
+  return string;
 }
 
 static char const* sv_find(struct string_view string, struct string_view needle)
@@ -121,6 +145,24 @@ static struct string_view sv_get_field(struct string_view string, size_t n)
   }
 
   return string;
+}
+
+static void sv_chomp_eol(struct string_view* string)
+{
+  STRING(eol, CRLF);
+  struct string_view eol_sv = {eol, 2};
+  if (string->size < eol_sv.size) {
+    return;
+  }
+
+  if (!sv_equals(sv_substr(*string, string->size - 2, 2), eol_sv)) {
+    sv_remove_prefix(&eol_sv, 1);
+    if (!sv_equals(sv_substr(*string, string->size - 1, 1), eol_sv)) {
+      return;
+    }
+  }
+
+  sv_remove_suffix(string, eol_sv.size);
 }
 
 static HANDLE stdin;
@@ -191,7 +233,7 @@ static int state;
 
 static int process_current_line(struct string_view string, int* done)
 {
-  sv_right_trim(&string);
+  sv_chomp_eol(&string);
 
   if (state == 0) {
     STRING(needle, "RVA");
