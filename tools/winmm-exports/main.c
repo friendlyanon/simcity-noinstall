@@ -4,6 +4,12 @@
 
 #include "array_size.h"
 
+#ifdef NO_CRT
+#  define STATIC static
+#else
+#  define STATIC
+#endif
+
 #define STRINGIFYX(x) #x
 #define STRINGIFY(x) STRINGIFYX(x)
 
@@ -261,7 +267,7 @@ static int process_current_line(struct string_view string, int* done)
   return 0;
 }
 
-void mainCRTStartup(void)
+STATIC int main(void)
 {
   int code = 0;
   int done = 0;
@@ -271,7 +277,7 @@ void mainCRTStartup(void)
     DWORD mode = 0;
     if (GetConsoleMode(stdin, &mode) != 0) {
       /* Input is not piped */
-      goto exit;
+      return code;
     }
   }
 
@@ -310,7 +316,7 @@ void mainCRTStartup(void)
           struct string_view current_line = {data, size};
           if (process_current_line(current_line, &done)) {
             code = 1;
-            goto exit;
+            return code;
           }
           if (done) {
             line.size = 0;
@@ -335,7 +341,7 @@ void mainCRTStartup(void)
           }
         }
 
-        goto exit;
+        return code;
       }
 
       if (begin == 0) {
@@ -346,7 +352,7 @@ void mainCRTStartup(void)
                 || output(stderr, line.buffer, line.size) || output_lf(stderr)
             ? 2
             : 1;
-        goto exit;
+        return code;
       } else if (line_read_until_end) {
         line.size = 0;
       } else {
@@ -359,6 +365,12 @@ void mainCRTStartup(void)
   main_loop:;
   }
 
-exit:
-  ExitProcess(code);
+  return code;
 }
+
+#ifdef NO_CRT
+void mainCRTStartup(void)
+{
+  ExitProcess(main());
+}
+#endif
