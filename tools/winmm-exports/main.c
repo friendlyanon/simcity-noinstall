@@ -155,10 +155,14 @@ static void sv_chomp_eol(struct string_view* string)
     return;
   }
 
-  if (!sv_equals(sv_substr(*string, string->size - 2, 2), eol_sv)) {
-    sv_remove_prefix(&eol_sv, 1);
-    if (!sv_equals(sv_substr(*string, string->size - 1, 1), eol_sv)) {
-      return;
+  {
+    struct string_view tail = sv_substr(*string, string->size - 2, 2);
+    if (!sv_equals(tail, eol_sv)) {
+      sv_remove_prefix(&tail, 1);
+      sv_remove_prefix(&eol_sv, 1);
+      if (!sv_equals(tail, eol_sv)) {
+        return;
+      }
     }
   }
 
