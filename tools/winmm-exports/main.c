@@ -153,26 +153,27 @@ static struct string_view sv_get_field(struct string_view string, size_t n)
   return string;
 }
 
+STRING(crlf, CRLF);
+
 static void sv_chomp_eol(struct string_view* string)
 {
-  STRING(eol, CRLF);
-  struct string_view eol_sv = {eol, 2};
-  if (string->size < eol_sv.size) {
+  struct string_view eol = {crlf, 2};
+  if (string->size < eol.size) {
     return;
   }
 
   {
     struct string_view tail = sv_substr(*string, string->size - 2, 2);
-    if (!sv_equals(tail, eol_sv)) {
+    if (!sv_equals(tail, eol)) {
       sv_remove_prefix(&tail, 1);
-      sv_remove_prefix(&eol_sv, 1);
-      if (!sv_equals(tail, eol_sv)) {
+      sv_remove_prefix(&eol, 1);
+      if (!sv_equals(tail, eol)) {
         return;
       }
     }
   }
 
-  sv_remove_suffix(string, eol_sv.size);
+  sv_remove_suffix(string, eol.size);
 }
 
 static HANDLE stdin;
@@ -197,7 +198,6 @@ static int output(HANDLE handle, void const* data, size_t size)
 
 static int output_lf(HANDLE handle)
 {
-  STRING(crlf, CRLF);
   return output(handle, crlf, sizeof(crlf));
 }
 
