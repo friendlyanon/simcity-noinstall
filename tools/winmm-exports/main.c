@@ -4,12 +4,6 @@
 
 #include "array_size.h"
 
-#ifdef NO_CRT
-#  define STATIC static
-#else
-#  define STATIC
-#endif
-
 #define STRINGIFYX(x) #x
 #define STRINGIFY(x) STRINGIFYX(x)
 
@@ -267,7 +261,15 @@ static int process_current_line(struct string_view string, int* done)
   return 0;
 }
 
-STATIC int main(void)
+#ifdef NO_CRT
+#  define ENTRY() void mainCRTStartup(void)
+#  define EXIT(x) ExitProcess(x)
+#else
+#  define ENTRY() int main(void)
+#  define EXIT(x) return x
+#endif
+
+ENTRY()
 {
   int code = 0;
   int done = 0;
@@ -277,7 +279,7 @@ STATIC int main(void)
     DWORD mode = 0;
     if (GetConsoleMode(stdin, &mode) != 0) {
       /* Input is not piped */
-      return code;
+      goto exit;
     }
   }
 
@@ -316,7 +318,7 @@ STATIC int main(void)
           struct string_view current_line = {data, size};
           if (process_current_line(current_line, &done)) {
             code = 1;
-            return code;
+            goto exit;
           }
           if (done) {
             line.size = 0;
@@ -341,7 +343,7 @@ STATIC int main(void)
           }
         }
 
-        return code;
+        goto exit;
       }
 
       if (begin == 0) {
@@ -352,7 +354,7 @@ STATIC int main(void)
                 || output(stderr, line.buffer, line.size) || output_lf(stderr)
             ? 2
             : 1;
-        return code;
+        goto exit;
       } else if (line_read_until_end) {
         line.size = 0;
       } else {
@@ -365,12 +367,6 @@ STATIC int main(void)
   main_loop:;
   }
 
-  return code;
+exit:
+  EXIT(code);
 }
-
-#ifdef NO_CRT
-void mainCRTStartup(void)
-{
-  ExitProcess(main());
-}
-#endif
