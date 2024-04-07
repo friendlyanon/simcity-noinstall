@@ -9,6 +9,8 @@
 
 #define STRING(name, str) static char const name[lengthof(str)] = str
 
+#define CRLF "\r\n"
+
 struct string_view
 {
   char const* data;
@@ -143,8 +145,8 @@ static int output(HANDLE handle, void const* data, size_t size)
 
 static int output_lf(HANDLE handle)
 {
-  char lf = '\n';
-  return output(handle, &lf, 1);
+  STRING(crlf, CRLF);
+  return output(handle, crlf, sizeof(crlf));
 }
 
 #define output_sv(handle, sv) (output(handle, sv.data, sv.size))
@@ -176,7 +178,7 @@ static int read_line(size_t* bytes_read)
   {
     DWORD error = GetLastError();
     if (error != 0 && error != ERROR_BROKEN_PIPE) {
-      STRING(message, "Could not read stdin\n");
+      STRING(message, "Could not read stdin" CRLF);
       return output(stderr, message, sizeof(message)) ? 2 : 1;
     }
   }
@@ -293,7 +295,7 @@ void mainCRTStartup(void)
       if (begin == 0) {
         STRING(message,
                "Line too long (longer than " STRINGIFY(
-                   LINE_BUFFER_SIZE) " bytes). Part of the line:\n");
+                   LINE_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
         code = output(stderr, message, sizeof(message))
                 || output(stderr, line.buffer, line.size) || output_lf(stderr)
             ? 2
