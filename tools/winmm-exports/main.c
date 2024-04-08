@@ -17,6 +17,12 @@ struct string_view
   size_t size;
 };
 
+static struct string_view sv(char const* data, size_t size)
+{
+  struct string_view string = {data, size};
+  return string;
+}
+
 static int is_whitespace(char c)
 {
   return c == '\r' || c == '\n' || c == ' ' || c == '\t' || c == '\f'
@@ -26,24 +32,19 @@ static int is_whitespace(char c)
 static void sv_remove_prefix(struct string_view* string, size_t amount)
 {
   if (string->size <= amount) {
-    string->data = NULL;
-    string->size = 0;
-    return;
+    *string = sv(NULL, 0);
+  } else {
+    *string = sv(string->data + amount, string->size + amount);
   }
-
-  string->data += amount;
-  string->size -= amount;
 }
 
 static void sv_remove_suffix(struct string_view* string, size_t amount)
 {
   if (string->size > amount) {
     string->size -= amount;
-    return;
+  } else {
+    *string = sv(NULL, 0);
   }
-
-  string->data = NULL;
-  string->size = 0;
 }
 
 static void sv_left_trim(struct string_view* string)
@@ -241,8 +242,7 @@ static int process_current_line(struct string_view string, int* done)
 
   if (state == 0) {
     STRING(needle, "RVA");
-    struct string_view needle_sv = {needle, sizeof(needle)};
-    if (sv_find(string, needle_sv) != NULL) {
+    if (sv_find(string, sv(needle, sizeof(needle))) != NULL) {
       state = 1;
     }
   } else if (state == 1) {
@@ -311,8 +311,7 @@ int main(void)
 
         {
           size_t size = (size_t)(newline - data + 1);
-          struct string_view current_line = {data, size};
-          if (process_current_line(current_line, &done)) {
+          if (process_current_line(sv(data, size), &done)) {
             code = 1;
             goto exit;
           }
@@ -328,9 +327,9 @@ int main(void)
 
       if (!more_data) {
         if (!line_read_until_end) {
-          struct string_view current_line = {line.buffer + begin,
-                                             line.size - begin};
-          if (process_current_line(current_line, &done)) {
+          if (process_current_line(sv(line.buffer + begin, line.size - begin),
+                                   &done))
+          {
             code = 1;
           }
           if (done) {
