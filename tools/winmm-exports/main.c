@@ -300,12 +300,17 @@ int main(void)
     }
 
     if (!done) {
+      int short_read = 0;
       int line_read_until_end = 0;
       size_t begin = 0;
       do {
         char const* data = line.buffer + begin;
         char const* newline = memchr(data, '\n', line.size - begin);
         if (newline == NULL) {
+          if (line.size != sizeof(line.buffer)) {
+            short_read = 1;
+          }
+
           break;
         }
 
@@ -325,7 +330,7 @@ int main(void)
         line_read_until_end = begin == line.size;
       } while (!line_read_until_end);
 
-      if (!more_data) {
+      if (!more_data || short_read) {
         if (!line_read_until_end) {
           if (process_current_line(sv(line.buffer + begin, line.size - begin),
                                    &done))
@@ -344,7 +349,7 @@ int main(void)
       if (begin == 0) {
         STRING(message,
                "Line too long (longer than " STRINGIFY(LINE_BUFFER_SIZE)
-               " bytes) or output contains no newline. Part of the line:" CRLF);
+               " bytes). Part of the line:" CRLF);
         code = output(stderr, message, sizeof(message))
                 || output(stderr, line.buffer, line.size) || output_lf(stderr)
             ? 2
