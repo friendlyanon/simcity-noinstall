@@ -74,16 +74,11 @@ static struct string_view sv_substr(struct string_view string,
                                     size_t offset,
                                     size_t length)
 {
-  size_t size = string.size;
-  string.size = 0;
-  if (size >= offset) {
-    string.data += offset;
-    if (size - offset >= length) {
-      string.size = length;
-    }
+  if (string.size >= offset && string.size - offset >= length) {
+    return sv(string.data + offset, length);
   }
 
-  return string;
+  return sv(NULL, 0);
 }
 
 static char const* sv_find(struct string_view string, struct string_view needle)
@@ -130,7 +125,7 @@ static struct string_view sv_get_field(struct string_view string, size_t n)
     char const* it = memchr(string.data, ' ', string.size);
     if (it == NULL) {
       if (i != n) {
-        string.size = 0;
+        return sv(NULL, 0);
       }
 
       break;
