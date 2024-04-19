@@ -34,7 +34,7 @@ static void sv_remove_prefix(struct string_view* string, size_t amount)
   if (string->size <= amount) {
     *string = sv(NULL, 0);
   } else {
-    *string = sv(string->data + amount, string->size + amount);
+    *string = sv(string->data + amount, string->size - amount);
   }
 }
 
