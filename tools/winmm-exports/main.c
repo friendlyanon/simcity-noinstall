@@ -74,7 +74,7 @@ static struct string_view sv_substr(struct string_view string,
                                     size_t offset,
                                     size_t length)
 {
-  if (string.size >= offset && string.size - offset >= length) {
+  if (length != 0 && string.size >= offset && string.size - offset >= length) {
     return sv(string.data + offset, length);
   }
 
@@ -195,25 +195,25 @@ static int output_lf(HANDLE handle)
 
 #define LINE_BUFFER_SIZE 512
 
-struct line
+struct input
 {
   char buffer[LINE_BUFFER_SIZE];
   size_t size;
 };
 
-static struct line line;
+static struct input input;
 
-static int read_line(size_t* bytes_read)
+static int read_input(size_t* bytes_read)
 {
   DWORD _bytes_read = 0;
-  if (line.size == sizeof(line.buffer)) {
+  if (input.size == sizeof(input.buffer)) {
     return 0;
   }
 
   SetLastError(0);
   if (ReadFile(stdin,
-               line.buffer + line.size,
-               sizeof(line.buffer) - line.size,
+               input.buffer + input.size,
+               sizeof(input.buffer) - input.size,
                &_bytes_read,
                NULL)
       == 0)
@@ -278,31 +278,31 @@ int main(void)
   stderr = GetStdHandle(STD_ERROR_HANDLE);
 
   while (1) {
-    size_t bytes_read = 0;
     if (more_data) {
-      if (read_line(&bytes_read)) {
+      size_t bytes_read = 0;
+      if (read_input(&bytes_read)) {
         code = 1;
         break;
       } else if (bytes_read == 0) {
         more_data = 0;
       } else if (!done) {
-        line.size += bytes_read;
+        input.size += bytes_read;
       }
     }
 
-    if (!more_data && (done || line.size == 0)) {
+    if (!more_data && (done || input.size == 0)) {
       break;
     }
 
     if (!done) {
       int short_read = 0;
-      int line_read_until_end = 0;
+      int input_read_until_end = 0;
       size_t begin = 0;
       do {
-        char const* data = line.buffer + begin;
-        char const* newline = memchr(data, '\n', line.size - begin);
+        char const* data = input.buffer + begin;
+        char const* newline = memchr(data, '\n', input.size - begin);
         if (newline == NULL) {
-          if (line.size != sizeof(line.buffer)) {
+          if (input.size != sizeof(input.buffer)) {
             short_read = 1;
           }
 
@@ -316,24 +316,24 @@ int main(void)
             goto exit;
           }
           if (done) {
-            line.size = 0;
+            input.size = 0;
             goto main_loop;
           }
           begin += size;
         }
 
-        line_read_until_end = begin == line.size;
-      } while (!line_read_until_end);
+        input_read_until_end = begin == input.size;
+      } while (!input_read_until_end);
 
       if (!more_data || short_read) {
-        if (!line_read_until_end) {
-          if (process_current_line(sv(line.buffer + begin, line.size - begin),
+        if (!input_read_until_end) {
+          if (process_current_line(sv(input.buffer + begin, input.size - begin),
                                    &done))
           {
             code = 1;
           }
           if (done) {
-            line.size = 0;
+            input.size = 0;
             goto main_loop;
           }
         }
@@ -343,19 +343,19 @@ int main(void)
 
       if (begin == 0) {
         STRING(message,
-               "Line too long (longer than " STRINGIFY(LINE_BUFFER_SIZE)
-               " bytes). Part of the line:" CRLF);
+               "Line too long (longer than " STRINGIFY(
+                   LINE_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
         code = output(stderr, message, sizeof(message))
-                || output(stderr, line.buffer, line.size) || output_lf(stderr)
+                || output(stderr, input.buffer, input.size) || output_lf(stderr)
             ? 2
             : 1;
         goto exit;
-      } else if (line_read_until_end) {
-        line.size = 0;
+      } else if (input_read_until_end) {
+        input.size = 0;
       } else {
-        size_t new_size = line.size - begin;
-        (void)memmove(line.buffer, line.buffer + begin, new_size);
-        line.size = new_size;
+        size_t new_size = input.size - begin;
+        (void)memmove(input.buffer, input.buffer + begin, new_size);
+        input.size = new_size;
       }
     }
 
