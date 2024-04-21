@@ -80,3 +80,35 @@ jobs:
 
     - name: Install
       run: cmake --install build --prefix prefix
+
+  docs:
+    # Deploy docs only when builds succeed
+    needs: [msvc, clang]
+
+    runs-on: ubuntu-22.04
+
+    if: github.ref == 'refs/heads/master'
+      && github.event_name == 'push'
+      && github.repository_owner == 'friendlyanon'
+
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install Doxygen
+      run: sudo apt-get update -q
+        && sudo apt-get install doxygen -q -y
+
+    - name: Build docs
+      working-directory: docs
+      run: |
+        printf %s\\n "OUTPUT_DIRECTORY = $PWD" >> Doxyfile
+        (cd ../source; doxygen ../docs/Doxyfile)
+
+    - name: Deploy docs
+      uses: peaceiris/actions-gh-pages@v4
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs/html

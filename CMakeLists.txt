@@ -55,7 +55,7 @@ find_package(minhook REQUIRED)
 target_link_libraries(simcity-noinstall PRIVATE minhook::minhook shlwapi)
 
 install(
-  FILES "\$<TARGET_FILE:simcity-noinstall>"
-  DESTINATION .
-  RENAME WINMM.DLL
+    FILES "\$<TARGET_FILE:simcity-noinstall>"
+    DESTINATION .
+    RENAME WINMM.DLL
 )

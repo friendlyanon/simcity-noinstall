@@ -15,10 +15,11 @@ static char company_name[32] = {0};
 static char language[33] = {0};
 static char windows_sc2k[33] = {0};
 
-char const* get_ini_string(char const* ini_path,
-                           char const* section,
-                           char const* key,
-                           char const* default_)
+char const* get_ini_string(  //
+    char const* ini_path,
+    char const* section,
+    char const* key,
+    char const* default_)
 {
   char* out = windows_sc2k;
   DWORD size = countof(windows_sc2k);
@@ -59,10 +60,11 @@ char const* get_ini_string(char const* ini_path,
   return out;
 }
 
-unsigned long get_ini_dword(char const* ini_path,
-                            char const* section,
-                            char const* key,
-                            unsigned long default_)
+unsigned long get_ini_dword(  //
+    char const* ini_path,
+    char const* section,
+    char const* key,
+    unsigned long default_)
 {
   unsigned long value = default_;
   char buffer[11] = {0};
@@ -76,10 +78,11 @@ unsigned long get_ini_dword(char const* ini_path,
   return value;
 }
 
-void set_ini_dword(char const* ini_path,
-                   char const* section,
-                   char const* key,
-                   unsigned long value)
+void set_ini_dword(  //
+    char const* ini_path,
+    char const* section,
+    char const* key,
+    unsigned long value)
 {
   char buffer[11] = {0};
   (void)sprintf(buffer, "%lu", value);
