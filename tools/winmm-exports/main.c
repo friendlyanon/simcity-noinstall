@@ -25,8 +25,7 @@ static struct string_view sv(char const* data, size_t size)
 
 static int is_whitespace(char c)
 {
-  return c == '\r' || c == '\n' || c == ' ' || c == '\t' || c == '\f'
-      || c == '\v';
+  return (unsigned char)(c - 9U) < 5U | ' ' == c;
 }
 
 static void sv_remove_prefix(struct string_view* string, size_t amount)
@@ -302,10 +301,7 @@ int main(void)
         char const* data = input.buffer + begin;
         char const* newline = memchr(data, '\n', input.size - begin);
         if (newline == NULL) {
-          if (input.size != sizeof(input.buffer)) {
-            short_read = 1;
-          }
-
+          short_read = input.size != sizeof(input.buffer);
           break;
         }
 
