@@ -19,7 +19,9 @@ struct string_view
 
 static struct string_view sv(char const* data, size_t size)
 {
-  struct string_view string = {data, size};
+  struct string_view string;
+  string.data = data;
+  string.size = size;
   return string;
 }
 
@@ -146,7 +148,7 @@ STRING(crlf, CRLF);
 
 static void sv_chomp_eol(struct string_view* string)
 {
-  struct string_view eol = {crlf, 2};
+  struct string_view eol = sv(crlf, 2);
   if (string->size < eol.size) {
     return;
   }
