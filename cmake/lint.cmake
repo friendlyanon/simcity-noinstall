@@ -7,7 +7,7 @@ macro(default name)
 endmacro()
 
 default(FORMAT_COMMAND clang-format)
-default(PATTERNS source/*.c source/*.h)
+default(PATTERNS source/*.c source/*.h tools/winmm-exports/*.c)
 default(FIX NO)
 
 set(flag --output-replacements-xml)

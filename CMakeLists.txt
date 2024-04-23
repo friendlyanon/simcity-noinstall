@@ -59,3 +59,9 @@ install(
     DESTINATION .
     RENAME WINMM.DLL
 )
+
+option(BUILD_WINMM_EXPORT_TOOL "Build tools/winmm-exports" OFF)
+mark_as_advanced(BUILD_WINMM_EXPORT_TOOL)
+if(BUILD_WINMM_EXPORT_TOOL)
+  add_subdirectory(tools/winmm-exports winmm-exports)
+endif()

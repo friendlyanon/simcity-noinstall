@@ -192,11 +192,11 @@ static int output_lf(HANDLE handle)
 
 #define output_sv(handle, sv) (output(handle, sv.data, sv.size))
 
-#define LINE_BUFFER_SIZE 512
+#define INPUT_BUFFER_SIZE 512
 
 struct input
 {
-  char buffer[LINE_BUFFER_SIZE];
+  char buffer[INPUT_BUFFER_SIZE];
   size_t size;
 };
 
@@ -324,8 +324,7 @@ int main(void)
       if (!more_data || short_read) {
         if (!input_read_until_end) {
           if (process_current_line(sv(input.buffer + begin, input.size - begin),
-                                   &done))
-          {
+                                   &done)) {
             code = 1;
           }
           if (done) {
@@ -340,7 +339,7 @@ int main(void)
       if (begin == 0) {
         STRING(message,
                "Line too long (longer than " STRINGIFY(
-                   LINE_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
+                   INPUT_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
         code = output(stderr, message, sizeof(message))
                 || output(stderr, input.buffer, input.size) || output_lf(stderr)
             ? 2
