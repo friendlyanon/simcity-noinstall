@@ -106,7 +106,7 @@ static char const* sv_find(struct string_view string, struct string_view needle)
         return NULL;
       }
 
-      if (memcmp(it, needle.data, needle.size) == 0) {
+      if (memcmp(it + 1, needle.data + 1, needle.size - 1) == 0) {
         return it;
       }
 
