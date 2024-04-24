@@ -18,8 +18,6 @@
  * @{
  */
 
-/** @internal */
-
 /**
  * Library handle of @c WINMM.DLL
  */
@@ -34,8 +32,6 @@ extern void* winmm_handle;
  * generate-stubs.cmake script. For use by ::stubs_ctor.
  */
 int stubs_load(void);
-
-/** @endinternal */
 
 /**
  * Initializes stub functionality
