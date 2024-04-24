@@ -325,8 +325,9 @@ int main(void)
 
       if (!more_data || short_read) {
         if (!input_read_until_end) {
-          if (process_current_line(sv(input.buffer + begin, input.size - begin),
-                                   &done)) {
+          struct string_view line =
+              sv(input.buffer + begin, input.size - begin);
+          if (process_current_line(line, &done)) {
             code = 1;
           }
           if (done) {
