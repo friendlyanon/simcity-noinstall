@@ -248,8 +248,8 @@ static int process_current_line(struct string_view string, int* done)
       *done = 1;
     } else {
       struct string_view field = sv_get_field(string, 3);
-      if (field.size != 0 && (output_sv(stdout, field) || output_lf(stdout))) {
-        return 1;
+      if (field.size != 0) {
+        return output_sv(stdout, field) || output_lf(stdout);
       }
     }
   }
@@ -281,8 +281,8 @@ int main(void)
   while (1) {
     if (more_data) {
       size_t bytes_read = 0;
-      if (read_input(&bytes_read)) {
-        code = 1;
+      code = read_input(&bytes_read);
+      if (code != 0) {
         break;
       } else if (bytes_read == 0) {
         more_data = 0;
@@ -309,8 +309,8 @@ int main(void)
 
         {
           size_t size = (size_t)(newline - data + 1);
-          if (process_current_line(sv(data, size), &done)) {
-            code = 1;
+          code = process_current_line(sv(data, size), &done);
+          if (code != 0) {
             goto exit;
           }
           if (done) {
@@ -325,10 +325,10 @@ int main(void)
 
       if (!more_data || short_read) {
         if (!input_read_until_end) {
-          struct string_view line =
-              sv(input.buffer + begin, input.size - begin);
-          if (process_current_line(line, &done)) {
-            code = 1;
+          code = process_current_line(
+              sv(input.buffer + begin, input.size - begin), &done);
+          if (code != 0) {
+            goto exit;
           }
           if (done) {
             input.size = 0;
@@ -343,10 +343,10 @@ int main(void)
         STRING(message,
                "Line too long (longer than " STRINGIFY(
                    INPUT_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
-        code = output(stderr, message, sizeof(message))
-                || output(stderr, input.buffer, input.size) || output_lf(stderr)
-            ? 2
-            : 1;
+        code =
+            (output(stderr, message, sizeof(message))
+             || output(stderr, input.buffer, input.size) || output_lf(stderr))
+            + 1;
         goto exit;
       } else if (input_read_until_end) {
         input.size = 0;
