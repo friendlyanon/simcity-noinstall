@@ -171,38 +171,56 @@ static HANDLE stdin;
 static HANDLE stdout;
 static HANDLE stderr;
 
-#define DWORD_MAX 4294967295U
+#define BUFFER_SIZE 512
 
-static int output(HANDLE handle, void const* data, size_t size)
+struct buffer
 {
-  DWORD bytes_written = 0;
-  if (size > DWORD_MAX) {
-    return 1;
-  }
-
-  if (WriteFile(handle, data, size, &bytes_written, NULL) == 0) {
-    return 1;
-  }
-
-  return bytes_written != size;
-}
-
-static int output_lf(HANDLE handle)
-{
-  return output(handle, crlf, sizeof(crlf));
-}
-
-#define output_sv(handle, sv) (output(handle, sv.data, sv.size))
-
-#define INPUT_BUFFER_SIZE 512
-
-struct input
-{
-  char buffer[INPUT_BUFFER_SIZE];
+  char buffer[BUFFER_SIZE];
   size_t size;
 };
 
-static struct input input;
+static struct buffer output;
+
+static int flush(HANDLE handle, struct buffer* buffer)
+{
+  int result = 0;
+  size_t size = buffer->size;
+  DWORD bytes_written = 0;
+  if (WriteFile(handle, buffer->buffer, size, &bytes_written, NULL) == 0) {
+    return 1;
+  }
+
+  result = bytes_written != size;
+  if (result == 0) {
+    buffer->size = 0;
+  }
+
+  return result;
+}
+
+static int append(struct buffer* buffer, void const* data, size_t size)
+{
+  size_t sum = buffer->size + size;
+  if (sum < size || sum > sizeof(buffer->buffer)) {
+    return 1;
+  }
+
+  if (size != 0) {
+    (void)memcpy(buffer->buffer + buffer->size, data, size);
+    buffer->size = sum;
+  }
+
+  return 0;
+}
+
+static int append_lf(struct buffer* buffer)
+{
+  return append(buffer, crlf, sizeof(crlf));
+}
+
+#define append_sv(buffer, sv) (append(buffer, sv.data, sv.size))
+
+static struct buffer input;
 
 static int read_input(size_t* bytes_read)
 {
@@ -222,7 +240,9 @@ static int read_input(size_t* bytes_read)
     DWORD error = GetLastError();
     if (error != 0 && error != ERROR_BROKEN_PIPE) {
       STRING(message, "Could not read stdin" CRLF);
-      return output(stderr, message, sizeof(message)) ? 2 : 1;
+      return append(&output, message, sizeof(message)) || flush(stderr, &output)
+          ? 2
+          : 1;
     }
   }
 
@@ -249,7 +269,8 @@ static int process_current_line(struct string_view string, int* done)
     } else {
       struct string_view field = sv_get_field(string, 3);
       if (field.size != 0) {
-        return output_sv(stdout, field) || output_lf(stdout);
+        return append_sv(&output, field) || append_lf(&output)
+            || flush(stdout, &output);
       }
     }
   }
@@ -342,10 +363,12 @@ int main(void)
       if (begin == 0) {
         STRING(message,
                "Line too long (longer than " STRINGIFY(
-                   INPUT_BUFFER_SIZE) " bytes). Part of the line:" CRLF);
+                   BUFFER_SIZE) " bytes). Part of the line:" CRLF);
         code =
-            (output(stderr, message, sizeof(message))
-             || output(stderr, input.buffer, input.size) || output_lf(stderr))
+            (append(&output, message, sizeof(message)) || flush(stderr, &output)
+             || append(&output, input.buffer, input.size)
+             || flush(stderr, &output) || append_lf(&output)
+             || flush(stderr, &output))
             + 1;
         goto exit;
       } else if (input_read_until_end) {
