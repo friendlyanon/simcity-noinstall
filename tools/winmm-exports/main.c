@@ -27,7 +27,7 @@ static struct string_view sv(char const* data, size_t size)
 
 static int is_whitespace(char c)
 {
-  return (unsigned char)(c - 9U) < 5U | ' ' == c;
+  return ((unsigned char)(c - 9U) < 5U) | (' ' == c);
 }
 
 static void sv_remove_prefix(struct string_view* string, size_t amount)
@@ -60,26 +60,6 @@ static void sv_left_trim(struct string_view* string)
   if (i != 0) {
     sv_remove_prefix(string, i);
   }
-}
-
-static int sv_equals(struct string_view a, struct string_view b)
-{
-  if (a.size != b.size) {
-    return 0;
-  }
-
-  return a.size == 0 ? 1 : memcmp(a.data, b.data, a.size) == 0;
-}
-
-static struct string_view sv_substr(struct string_view string,
-                                    size_t offset,
-                                    size_t length)
-{
-  if (length != 0 && string.size >= offset && string.size - offset >= length) {
-    return sv(string.data + offset, length);
-  }
-
-  return sv(NULL, 0);
 }
 
 static char const* sv_find(struct string_view string, struct string_view needle)
