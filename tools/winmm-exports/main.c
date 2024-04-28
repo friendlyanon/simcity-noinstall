@@ -148,23 +148,24 @@ STRING(crlf, CRLF);
 
 static void sv_chomp_eol(struct string_view* string)
 {
-  struct string_view eol = sv(crlf, 2);
-  if (string->size < eol.size) {
+  size_t size = string->size;
+  size_t index = sizeof(crlf);
+  size_t count = 0;
+  if (size == 0) {
     return;
   }
 
-  {
-    struct string_view tail = sv_substr(*string, string->size - 2, 2);
-    if (!sv_equals(tail, eol)) {
-      sv_remove_prefix(&tail, 1);
-      sv_remove_prefix(&eol, 1);
-      if (!sv_equals(tail, eol)) {
-        return;
-      }
+  while (1) {
+    int is_equal = string->data[--size] == crlf[--index];
+    count += is_equal;
+    if (!is_equal || size == 0 || index == 0) {
+      break;
     }
   }
 
-  sv_remove_suffix(string, eol.size);
+  if (count != 0) {
+    sv_remove_suffix(string, count);
+  }
 }
 
 static HANDLE stdin;
