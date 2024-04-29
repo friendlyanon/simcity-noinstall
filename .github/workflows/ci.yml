@@ -99,7 +99,7 @@ jobs:
 
     - name: Install Doxygen
       run: sudo apt-get update -q
-        && sudo apt-get install doxygen -q -y
+        && sudo apt-get install doxygen graphviz -q -y
 
     - name: Build docs
       working-directory: docs
