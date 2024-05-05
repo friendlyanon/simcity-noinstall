@@ -70,6 +70,8 @@ static char const* sv_find(struct string_view string, struct string_view needle)
 
   if (needle.size == 0) {
     return string.data;
+  } else if (needle.size == 1) {
+    return memchr(string.data, needle.data[0], string.size);
   }
 
   {
