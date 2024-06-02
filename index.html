@@ -68,9 +68,13 @@ $(function() {
 <div class="textblock"><p><a class="anchor" id="md__home_runner_work_simcity_noinstall_simcity_noinstall_README"></a> Fixes issues with SimCity 2000 Special Edition (Win95) without any patches, to keep the files in their original state.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
 How to use</h1>
-<p>The project produces <code>WINMM.DLL</code>. This will have to be placed in the game's <code>SC2K</code> folder.</p>
-<p>Upon launching the game, <code>simcity-noinstall.ini</code> will be created, where you can edit your mayor and company names.</p>
+<p>To install SimCity 2000 (Win95), copy the <code>DATA</code> and <code>WIN95\SC2K</code> folders from the disc to some location where the program can create files. The two folders should end up next to each other. Please make sure that they aren't too far from the root of the drive, because there is a 260 character limit.</p>
+<p>To use simcity-noinstall, copy <code>WINMM.DLL</code> to the <code>SC2K</code> folder.</p>
+<p>After you start the game, <code>simcity-noinstall.ini</code> will be created in the <code>SC2K</code> folder, where you can edit your mayor and company names, among other settings. This setup allows you to freely relocate the game, because every setting of the game is stored in the ini.</p>
 <h1><a class="anchor" id="autotoc_md2"></a>
+Building</h1>
+<p>Due to the limitations of CMake's VS generator regarding MASM source files, you have to use the <code>Ninja</code> or <code>NMake</code> generator to create a build system.</p>
+<h1><a class="anchor" id="autotoc_md3"></a>
 TODO</h1>
 <p>Look into the <code>WM_MDIGETACTIVE</code> message spam. This causes high CPU usage on the core where the game is running. </p>
 </div></div><!-- PageDoc -->
