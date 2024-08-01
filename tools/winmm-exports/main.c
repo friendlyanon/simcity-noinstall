@@ -262,14 +262,25 @@ static int process_current_line(struct string_view string, int* done)
 }
 
 #ifdef NO_CRT
-void mainCRTStartup(void)
+void mainCRTStartup(void* peb)
 #else
-int main(void)
+int main(int argc, char** argv)
 #endif
 {
-  int code = 0;
-  int done = 0;
-  int more_data = 1;
+  int code;
+  int done;
+  int more_data;
+
+#ifdef NO_CRT
+  (void)peb;
+#else
+  (void)argc;
+  (void)argv;
+#endif
+
+  code = 0;
+  done = 0;
+  more_data = 1;
   stdin = GetStdHandle(STD_INPUT_HANDLE);
   {
     DWORD mode = 0;
