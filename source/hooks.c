@@ -379,33 +379,34 @@ static int WINAPI StretchDIBits_fn(  //
     UINT iUsage,
     DWORD rop)
 {
-  if (hdc != last_device_context || hit_count != 2) {
-    {
-      struct scaled scaled = scale(&DestWidth, &DestHeight);
-      DestWidth = scaled.a;
-      DestHeight = scaled.b;
-    }
+  if (iUsage != 0) {
+    if (hdc != last_device_context || hit_count != 2) {
+      {
+        struct scaled scaled = scale(&DestWidth, &DestHeight);
+        DestWidth = scaled.a;
+        DestHeight = scaled.b;
+      }
 
-    xDest -= screen->half_width;
-    yDest -= screen->half_height;
-
-    {
-      int x_sign = xDest < 0 ? -1 : 1;
-      int y_sign = yDest < 0 ? -1 : 1;
-      xDest *= x_sign;
-      yDest *= y_sign;
+      xDest -= screen->half_width;
+      yDest -= screen->half_height;
 
       {
-        struct scaled scaled = scale(&xDest, &yDest);
-        xDest = scaled.a * x_sign;
-        yDest = scaled.b * y_sign;
+        int x_sign = xDest < 0 ? -1 : 1;
+        int y_sign = yDest < 0 ? -1 : 1;
+        xDest *= x_sign;
+        yDest *= y_sign;
+
+        {
+          struct scaled scaled = scale(&xDest, &yDest);
+          xDest = scaled.a * x_sign;
+          yDest = scaled.b * y_sign;
+        }
       }
+
+      xDest += screen->half_width;
+      yDest += screen->half_height;
     }
-
-    xDest += screen->half_width;
-    yDest += screen->half_height;
   }
-
   return StretchDIBits_ptr(  //
       hdc,
       xDest,
