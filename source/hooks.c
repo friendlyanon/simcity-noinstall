@@ -379,7 +379,7 @@ static int WINAPI StretchDIBits_fn(  //
     UINT iUsage,
     DWORD rop)
 {
-  if (hdc != last_device_context || hit_count != 2) {
+  if (iUsage != 0 && (hdc != last_device_context || hit_count != 2)) {
     {
       struct scaled scaled = scale(&DestWidth, &DestHeight);
       DestWidth = scaled.a;
