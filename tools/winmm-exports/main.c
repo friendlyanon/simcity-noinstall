@@ -137,7 +137,7 @@ static void sv_chomp_eol(struct string_view* string)
     return;
   }
 
-  while (1) {
+  for (;;) {
     int is_equal = string->data[--size] == crlf[--index];
     count += is_equal;
     if (!is_equal || size == 0 || index == 0) {
@@ -293,7 +293,7 @@ int main(int argc, char** argv)
   stdout = GetStdHandle(STD_OUTPUT_HANDLE);
   stderr = GetStdHandle(STD_ERROR_HANDLE);
 
-  while (1) {
+  for (;;) {
     if (more_data) {
       size_t bytes_read = 0;
       code = read_input(&bytes_read);
