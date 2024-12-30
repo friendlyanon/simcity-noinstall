@@ -267,9 +267,9 @@ void mainCRTStartup(void* peb)
 int main(int argc, char** argv)
 #endif
 {
-  int code;
-  int done;
-  int more_data;
+  int code = 0;
+  int done = 0;
+  int more_data = 1;
 
 #ifdef NO_CRT
   (void)peb;
@@ -278,9 +278,6 @@ int main(int argc, char** argv)
   (void)argv;
 #endif
 
-  code = 0;
-  done = 0;
-  more_data = 1;
   stdin = GetStdHandle(STD_INPUT_HANDLE);
   {
     DWORD mode = 0;
