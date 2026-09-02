@@ -291,6 +291,9 @@ int main(int argc, char** argv)
   stderr = GetStdHandle(STD_ERROR_HANDLE);
 
   for (;;) {
+    size_t begin = 0;
+    int last = 0;
+
     if (more_data) {
       size_t bytes_read = 0;
       code = read_input(&bytes_read);
@@ -303,75 +306,61 @@ int main(int argc, char** argv)
       }
     }
 
-    if (!more_data && (done || input.size == 0)) {
+    if (done || input.size == 0) {
+      if (!more_data) {
+        break;
+      }
+
+      continue;
+    }
+
+    last = !more_data || input.size != sizeof(input.buffer);
+
+    while (begin != input.size) {
+      char const* data = input.buffer + begin;
+      size_t remaining = input.size - begin;
+      char const* newline = memchr(data, '\n', remaining);
+      size_t size = newline != NULL ? (size_t)(newline - data) + 1 : remaining;
+
+      if (newline == NULL && !last) {
+        break;
+      }
+
+      code = process_current_line(sv(data, size), &done);
+      if (code != 0) {
+        goto exit;
+      }
+
+      begin += size;
+      if (done) {
+        input.size = 0;
+        break;
+      }
+    }
+
+    if (done) {
+      continue;
+    }
+
+    if (last) {
       break;
     }
 
-    if (!done) {
-      int short_read = 0;
-      int input_read_until_end = 0;
-      size_t begin = 0;
-      do {
-        char const* data = input.buffer + begin;
-        char const* newline = memchr(data, '\n', input.size - begin);
-        if (newline == NULL) {
-          short_read = input.size != sizeof(input.buffer);
-          break;
-        }
-
-        {
-          size_t size = (size_t)(newline - data + 1);
-          code = process_current_line(sv(data, size), &done);
-          if (code != 0) {
-            goto exit;
-          }
-          if (done) {
-            input.size = 0;
-            goto main_loop;
-          }
-          begin += size;
-        }
-
-        input_read_until_end = begin == input.size;
-      } while (!input_read_until_end);
-
-      if (!more_data || short_read) {
-        if (!input_read_until_end) {
-          code = process_current_line(
-              sv(input.buffer + begin, input.size - begin), &done);
-          if (code != 0) {
-            goto exit;
-          }
-          if (done) {
-            input.size = 0;
-            goto main_loop;
-          }
-        }
-
-        goto exit;
-      }
-
-      if (begin == 0) {
-        STRING(message,
-               "Line too long (longer than " STRINGIFY(
-                   BUFFER_SIZE) " bytes). Part of the line:" CRLF);
-        code =
-            (append(&output, message, sizeof(message)) || flush(stderr, &output)
-             || append(&output, input.buffer, input.size)
-             || flush(stderr, &output) || append_lf(&output)
-             || flush(stderr, &output))
-            + 1;
-        goto exit;
-      } else if (input_read_until_end) {
-        input.size = 0;
-      } else {
-        size_t new_size = input.size - begin;
-        (void)memmove(input.buffer, input.buffer + begin, new_size);
-        input.size = new_size;
-      }
+    if (begin == 0) {
+      STRING(message,
+             "Line too long (longer than " STRINGIFY(
+                 BUFFER_SIZE) " bytes). Part of the line:" CRLF);
+      code =
+          (append(&output, message, sizeof(message)) || flush(stderr, &output)
+           || append(&output, input.buffer, input.size)
+           || flush(stderr, &output) || append_lf(&output)
+           || flush(stderr, &output))
+          + 1;
+      break;
     }
 
-  main_loop:;
+    input.size -= begin;
+    (void)memmove(input.buffer, input.buffer + begin, input.size);
   }
 
 exit:
